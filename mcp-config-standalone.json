@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "apple-notes": {
+      "command": "/Users/henil/.local/bin/uv",
+      "args": ["run", "python", "-m", "mcp_apple_notes.server"],
+      "env": {
+        "PYTHONPATH": "/Users/henil/Desktop/mcp-apple-notes"
+      }
+    }
+  }
+}
