@@ -10,15 +10,6 @@ mcp = FastMCP(name="mcp-apple-notes")
 # Initialize tools
 notes_tools = NotesTools()
 
-@mcp.tool()
-async def list_notes(ctx: Context) -> str:
-    """List all Apple Notes with metadata."""
-    try:
-        notes = await notes_tools.list_notes()
-        return str(notes)
-    except Exception as e:
-        await ctx.error(f"Error listing notes: {str(e)}")
-        raise
 
 @mcp.tool()
 async def create_note(ctx: Context, name: str, body: str, folder_name: str = "Notes") -> str:
@@ -197,10 +188,10 @@ async def move_folder(ctx: Context, source_path: str, folder_name: str, target_p
         raise
 
 @mcp.tool()
-async def list_folder_structure(ctx: Context) -> str:
+async def list_folder_with_structure(ctx: Context) -> str:
     """List the complete folder structure with hierarchical tree format."""
     try:
-        folder_structure = await notes_tools.list_folder_structure()
+        folder_structure = await notes_tools.list_folder_with_structure()
         
         if not folder_structure:
             return "No folders found in Apple Notes"
@@ -209,6 +200,21 @@ async def list_folder_structure(ctx: Context) -> str:
         return f"📁 Apple Notes Folder Structure:\n\n{folder_structure}"
     except Exception as e:
         await ctx.error(f"Error listing folder structure: {str(e)}")
+        raise
+
+@mcp.tool()
+async def list_notes_with_structure(ctx: Context) -> str:
+    """List the complete folder structure with notes included in hierarchical tree format."""
+    try:
+        notes_structure = await notes_tools.list_notes_with_structure()
+        
+        if not notes_structure:
+            return "No folders or notes found in Apple Notes"
+        
+        # Return filtered AppleScript result
+        return f"📁 Apple Notes Structure with Notes:\n\n{notes_structure}"
+    except Exception as e:
+        await ctx.error(f"Error listing notes structure: {str(e)}")
         raise
 
 # Run the server

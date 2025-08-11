@@ -89,12 +89,16 @@ Ensure your MCP client has permission to:
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
-| `list_notes` | List all Apple Notes with metadata | None |
-| `read_note` | Read content of a specific note | `note_id` (string) |
-| `create_note` | Create a new note | `title` (string), `content` (string) |
-| `update_note` | Update an existing note | `note_id` (string), `title` (optional), `content` (optional) |
-| `delete_note` | Delete a note | `note_id` (string) |
-| `search_notes` | Search notes by content or title | `query` (string) |
+| `list_notes_with_structure` | List complete folder structure with notes included | None |
+| `list_folder_with_structure` | List complete folder structure | None |
+| `create_note` | Create a new note | `name` (string), `body` (string), `folder_name` (string, optional) |
+| `create_note_in_path` | Create a new note in nested folder path | `name` (string), `body` (string), `folder_path` (string) |
+| `read_note_by_name` | Read notes by name in folder | `note_name` (string), `folder_name` (string) |
+| `read_note_by_name_in_path` | Read notes by name in nested folder path | `note_name` (string), `folder_path` (string) |
+| `create_folder` | Create folder with optional path | `folder_name` (string), `folder_path` (string, optional) |
+| `get_folder_details` | Get comprehensive folder details | `folder_name` (string) |
+| `rename_folder` | Rename folder with path support | `folder_path` (string), `current_name` (string), `new_name` (string) |
+| `move_folder` | Move folder between locations | `source_path` (string), `folder_name` (string), `target_path` (string, optional) |
 
 ## Available Resources
 

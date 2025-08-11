@@ -1,5 +1,4 @@
 from .base_operations import BaseAppleScriptOperations
-from .list_notes import ListNotesOperations
 from .create_note import CreateNoteOperations
 from .list_folders import ListFoldersOperations
 from .create_folder import CreateFolderOperations
@@ -9,10 +8,11 @@ from .folder_utils import FolderPathUtils
 from .folder_details import FolderDetailsOperations
 from .rename_folder import RenameFolderOperations
 from .move_folder import MoveFolderOperations
+from .folder_structure import FolderStructureOperations
+from .notes_structure import NotesStructureOperations
 
 __all__ = [
     'BaseAppleScriptOperations',
-    'ListNotesOperations', 
     'CreateNoteOperations',
     'ListFoldersOperations',
     'CreateFolderOperations',
@@ -21,5 +21,7 @@ __all__ = [
     'FolderPathUtils',
     'FolderDetailsOperations',
     'RenameFolderOperations',
-    'MoveFolderOperations'
+    'MoveFolderOperations',
+    'FolderStructureOperations',
+    'NotesStructureOperations'
 ]

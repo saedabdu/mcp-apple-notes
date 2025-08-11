@@ -2,22 +2,22 @@
 
 ## **📋 Complete Tools Summary**
 
-### **✅ Currently Available Tools (10 total)**
+### **✅ Currently Available Tools (11 total)**
 
 #### **Core Note Management (5 tools)**
-1. ✅ `list_notes` - List all notes with metadata
-   - **Description**: Retrieves all Apple Notes with their names, folders, creation dates, and modification dates
-2. ✅ `create_note` - Create note in folder (backward compatibility)
+1. ✅ `create_note` - Create note in folder (backward compatibility)
    - **Description**: Creates a new note with specified name and content in a single folder
-3. ✅ `create_note_in_path` - Create note in nested folder path
+2. ✅ `create_note_in_path` - Create note in nested folder path
    - **Description**: Creates a new note in a nested folder structure, automatically creating parent folders if needed
-4. ✅ `read_note_by_name` - Read notes by name in folder
+3. ✅ `read_note_by_name` - Read notes by name in folder
    - **Description**: Retrieves all notes with a specific name from a single folder, including full content
-5. ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
+4. ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
    - **Description**: Retrieves all notes with a specific name from a nested folder path, including full content
+5. ✅ `list_notes_with_structure` - List complete folder structure with notes included
+   - **Description**: Returns the complete folder structure with notes included in hierarchical tree format
 
-#### **Folder Operations (5 tools)**
-6. ✅ `list_folder_structure` - List complete folder structure with hierarchy
+#### **Folder Operations (6 tools)**
+6. ✅ `list_folder_with_structure` - List complete folder structure with hierarchy
    - **Description**: Returns the complete folder structure in hierarchical tree format
 7. ✅ `create_folder` - Create folder with optional path
    - **Description**: Creates a folder with specified name, optionally within a nested path. If no path given, creates at root level.
@@ -28,15 +28,13 @@
 10. ✅ `move_folder` - Move folder between locations
     - **Description**: Moves a folder from one location to another, supporting root level and nested paths
 
-### **🔄 Planned Tools (13 total)**
+### **🔄 Planned Tools (16 total)**
 
 #### **Core Note Management (2 tools)**
 - 🔄 `update_note` - Modify note content and metadata
   - **Description**: Updates existing note content, name, or both while preserving creation date
 - 🔄 `delete_note` - Remove notes with confirmation
   - **Description**: Permanently removes notes from folders with optional confirmation prompts
-
-
 
 #### **Note Organization (1 tool)**
 - 🔄 `move_note_to_folder` - Organize notes between folders
@@ -62,18 +60,41 @@
 - 🔄 `delete_attachment` - Remove attachments
   - **Description**: Removes specific attachments from notes while preserving the note content
 
+#### **Batch Operations (3 tools)**
+- 🔄 `bulk_move_notes` - Mass organization
+  - **Description**: Moves multiple notes between folders in batch operations
+- 🔄 `bulk_delete_notes` - Cleanup operations
+  - **Description**: Deletes multiple notes with confirmation and safety checks
+- 🔄 `export_notes` - Backup/export functionality
+  - **Description**: Exports notes in various formats (txt, html, etc.) for backup
+
+#### **Utility Tools (2 tools)**
+- 🔄 `get_app_info` - Notes app version/status
+  - **Description**: Gets Apple Notes app version and current status
+- 🔄 `activate_notes` - Bring app to foreground
+  - **Description**: Brings Apple Notes application to the foreground
+
 ### **📊 Implementation Progress**
-- **✅ Completed**: 10 tools (43%)
-- **🔄 Planned**: 13 tools (57%)
-- **📈 Total**: 23 tools
+- **✅ Completed**: 11 tools (41%)
+- **🔄 Planned**: 16 tools (59%)
+- **📈 Total**: 27 tools
 
 ---
 
 ## **Current Implementation Status**
 
 ### **🔄 Recent Changes**
-- **Removed**: `get_folder_hierarchy_details` tool (redundant with `list_folder_structure`)
-- **Reason**: `list_folder_structure` already provides complete hierarchy overview
+- **❌ REMOVED**: `list_notes` tool (redundant with `list_notes_with_structure`)
+  - **Reason**: `list_notes_with_structure` provides better visual organization and includes all note information
+  - **Alternative**: Use `list_notes_with_structure` for comprehensive note listing with hierarchical view
+- **✅ IMPROVED**: `list_notes_with_structure` tool (moved to Core Note Management)
+  - **Reason**: Better organization - tool now grouped with other note-related tools
+  - **Improvements**: 
+    - Consistent tree formatting with proper indentation
+    - Enhanced note display with 📝 emoji
+    - Professional tree structure quality
+- **Removed**: `get_folder_hierarchy_details` tool (redundant with `list_folder_with_structure`)
+- **Reason**: `list_folder_with_structure` already provides complete hierarchy overview
 - **Alternative**: Use `get_folder_details` for specific folder information
 - **Removed**: `delete_folder` tool (functionality removed)
 - **Reason**: Delete folder functionality has been completely removed from the codebase
@@ -83,16 +104,16 @@
 - **Reason**: Added comprehensive folder moving capabilities with validation
 
 ### **Core Note Management**
-- ✅ `list_notes` - Get all notes with metadata
 - ✅ `create_note` - Create note with body and folder
 - ✅ `create_note_in_path` - Create note in nested folder path
 - ✅ `read_note_by_name` - Read notes by name in folder
 - ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
+- ✅ `list_notes_with_structure` - Get complete folder structure with notes included
 - 🔄 `update_note` - Modify note body/name
 - 🔄 `delete_note` - Remove notes
 
 ### **Folder Operations**
-- ✅ `list_folder_structure` - Get complete folder structure with hierarchy
+- ✅ `list_folder_with_structure` - Get complete folder structure with hierarchy
 - ✅ `create_folder` - Create folder with optional path
 - ✅ `get_folder_details` - Get comprehensive folder details with hierarchy
 - ✅ `rename_folder` - Rename folder with path support
@@ -130,14 +151,7 @@
 
 #### **Core Note Management**
 
-##### `list_notes`
-```python
-async def list_notes(ctx: Context) -> str:
-    """List all Apple Notes with metadata."""
-```
-- **Status**: ✅ Implemented
-- **Returns**: List of all notes with metadata
-- **Error Handling**: Graceful error reporting via Context
+
 
 ##### `create_note`
 ```python
@@ -182,11 +196,24 @@ async def read_note_by_name_in_path(ctx: Context, note_name: str, folder_path: s
 - **Returns**: All matching notes with full content
 - **Features**: Works with nested folder paths
 
+##### `list_notes_with_structure`
+```python
+async def list_notes_with_structure(ctx: Context) -> str:
+    """List the complete folder structure with notes included in hierarchical tree format."""
+```
+- **Status**: ✅ Implemented
+- **Returns**: Complete folder structure with notes in hierarchical tree format
+- **Features**: 
+  - Consistent tree formatting with proper indentation
+  - Notes displayed with 📝 emoji for visual distinction
+  - Duplicate folder filtering
+  - Professional tree structure quality
+
 #### **Folder Operations**
 
-##### `list_folder_structure`
+##### `list_folder_with_structure`
 ```python
-async def list_folder_structure(ctx: Context) -> str:
+async def list_folder_with_structure(ctx: Context) -> str:
     """List the complete folder structure with hierarchical tree format."""
 ```
 - **Status**: ✅ Implemented
@@ -208,10 +235,6 @@ async def create_folder(ctx: Context, folder_name: str, folder_path: str = "") -
 - **Examples**: 
   - `create_folder("Work")` - Creates "Work" at root level
   - `create_folder("Q1", "Work/Projects/2024")` - Creates "Q1" inside "Work/Projects/2024"
-
-
-
-
 
 ##### `get_folder_details`
 ```python
@@ -240,9 +263,22 @@ async def rename_folder(ctx: Context, folder_path: str, current_name: str, new_n
   - Provides detailed success/error messages
   - Handles path navigation automatically
 
-
-
- 
+##### `move_folder`
+```python
+async def move_folder(ctx: Context, source_path: str, folder_name: str, target_path: str = "") -> str:
+    """Move a folder from one location to another in Apple Notes."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: 
+  - `source_path` (required) - Path where the folder currently exists
+  - `folder_name` (required) - Name of the folder to move
+  - `target_path` (optional) - Path where to move the folder. If empty, moves to root level.
+- **Returns**: Move operation result with status and details
+- **Features**: 
+  - Supports moving between nested paths
+  - Validates source and target paths
+  - Provides detailed success/error messages
+  - Handles path navigation automatically
 
 ---
 
@@ -271,6 +307,12 @@ async def rename_folder(ctx: Context, folder_path: str, current_name: str, new_n
 - **AppleScript**: `tell application "Notes" to move note to folder`
 
 ### **Advanced Search & Query**
+
+#### `search_notes`
+- **Purpose**: Search notes by content, name, or date
+- **Parameters**: `query`, `search_type` (content, name, date)
+- **Returns**: Matching notes list
+- **Features**: Text search, date filtering
 
 #### `filter_notes`
 - **Purpose**: Advanced filtering with multiple conditions
@@ -357,14 +399,16 @@ async def rename_folder(ctx: Context, folder_path: str, current_name: str, new_n
 ## **Implementation Priority**
 
 ### **Phase 1: Complete CRUD Operations** ✅ **COMPLETED**
-1. ✅ `list_notes` - List all notes
-2. ✅ `create_note` - Create notes in folders
-3. ✅ `create_note_in_path` - Create notes in nested folders
-4. ✅ `read_note_by_name` - Read notes by name
-5. ✅ `read_note_by_name_in_path` - Read notes from nested paths
-6. ✅ `list_folder_structure` - List complete folder structure
+1. ✅ `create_note` - Create notes in folders
+2. ✅ `create_note_in_path` - Create notes in nested folders
+3. ✅ `read_note_by_name` - Read notes by name
+4. ✅ `read_note_by_name_in_path` - Read notes from nested paths
+5. ✅ `list_notes_with_structure` - List complete folder structure with notes
+6. ✅ `list_folder_with_structure` - List complete folder structure
 7. ✅ `create_folder` - Create folder with optional path
 8. ✅ `get_folder_details` - Get comprehensive folder details
+9. ✅ `rename_folder` - Rename folder with path support
+10. ✅ `move_folder` - Move folder between locations
 
 ### **Phase 2: Update & Delete Operations** 🔄 **IN PROGRESS**
 1. `update_note` - Modify note content and metadata
@@ -398,8 +442,8 @@ async def rename_folder(ctx: Context, folder_path: str, current_name: str, new_n
 
 ### **Basic Note Operations**
 ```python
-# List all notes
-await list_notes()
+# List all notes with structure
+await list_notes_with_structure()
 
 # Create note in default folder
 await create_note("Meeting Notes", "Team meeting content")
@@ -429,17 +473,16 @@ await read_note_by_name_in_path("Sprint Planning", "Work/Projects/2024/Q1")
 ### **Folder Management**
 ```python
 # List complete folder structure with hierarchy
-await list_folder_structure()
+await list_folder_with_structure()
+
+# List complete folder structure with notes included
+await list_notes_with_structure()
 
 # Create folder at root level
 await create_folder("Work")
 
 # Create folder within existing path
 await create_folder("Q1", "Work/Projects/2024")
-
-
-
-
 
 # Get comprehensive folder details with hierarchy
 await get_folder_details("Work")
@@ -452,6 +495,9 @@ await rename_folder("Work/Projects", "Projects", "Active Projects")
 
 # Rename deeply nested folder
 await rename_folder("Work/Projects/2024/Q1", "Q1", "Q1 2024")
+
+# Move folder to different location
+await move_folder("Work/Projects", "Projects", "Active Work")
 
 # Note: Delete folder functionality has been removed from the codebase
 ```

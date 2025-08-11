@@ -1,5 +1,4 @@
 from typing import List, Dict, Any, Optional
-from ..applescript.list_notes import ListNotesOperations
 from ..applescript.create_note import CreateNoteOperations
 from ..applescript.list_folders import ListFoldersOperations
 from ..applescript.create_folder import CreateFolderOperations
@@ -9,6 +8,7 @@ from ..applescript.folder_details import FolderDetailsOperations
 from ..applescript.rename_folder import RenameFolderOperations
 from ..applescript.move_folder import MoveFolderOperations
 from ..applescript.folder_structure import FolderStructureOperations
+from ..applescript.notes_structure import NotesStructureOperations
 
 class NotesTools:
     """Tools for Apple Notes operations."""
@@ -113,10 +113,7 @@ class NotesTools:
         except Exception:
             return False
     
-    async def list_notes(self) -> List[Dict[str, Any]]:
-        """List all notes."""
-        return await ListNotesOperations.list_all_notes()
-    
+
     async def create_note(self, name: str, body: str, folder_name: str = "Notes") -> Dict[str, str]:
         """Create a new note (backward compatibility)."""
         return await CreateNoteOperations.create_note(name, body, folder_name)
@@ -161,7 +158,11 @@ class NotesTools:
         """
         return await MoveFolderOperations.move_folder(source_path, folder_name, target_path)
     
-    async def list_folder_structure(self) -> str:
+    async def list_folder_with_structure(self) -> str:
         """List the complete folder structure with hierarchical tree format."""
         return await FolderStructureOperations.get_filtered_folders_structure()
+    
+    async def list_notes_with_structure(self) -> str:
+        """List the complete folder structure with notes included in hierarchical tree format."""
+        return await NotesStructureOperations.get_filtered_notes_structure()
 
