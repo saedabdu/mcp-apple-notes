@@ -1,21 +1,102 @@
 # MCP Apple Notes - Tools Planning
 
+## **📋 Complete Tools Summary**
+
+### **✅ Currently Available Tools (13 total)**
+
+#### **Core Note Management (5 tools)**
+1. ✅ `list_notes` - List all notes with metadata
+   - **Description**: Retrieves all Apple Notes with their names, folders, creation dates, and modification dates
+2. ✅ `create_note` - Create note in folder (backward compatibility)
+   - **Description**: Creates a new note with specified name and content in a single folder
+3. ✅ `create_note_in_path` - Create note in nested folder path
+   - **Description**: Creates a new note in a nested folder structure, automatically creating parent folders if needed
+4. ✅ `read_note_by_name` - Read notes by name in folder
+   - **Description**: Retrieves all notes with a specific name from a single folder, including full content
+5. ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
+   - **Description**: Retrieves all notes with a specific name from a nested folder path, including full content
+
+#### **Folder Operations (8 tools)**
+6. ✅ `list_folders` - List folders with hierarchical structure
+   - **Description**: Returns folders with their full paths showing the hierarchical structure
+9. ✅ `create_folder` - Create single folder (backward compatibility)
+   - **Description**: Creates a single folder at the root level
+10. ✅ `create_folder_with_path` - Create nested folder structure
+    - **Description**: Creates a nested folder structure, automatically creating any missing parent folders
+11. ✅ `list_notes_by_folder` - List notes from folder (backward compatibility)
+    - **Description**: Lists all notes within a single folder with their metadata
+12. ✅ `list_notes_by_folder_path` - List notes from nested folder path
+    - **Description**: Lists all notes within a nested folder path with their metadata
+13. ✅ `resolve_folder_path` - Resolve folder path to metadata
+    - **Description**: Validates and resolves a folder path, returning folder metadata and existence status
+14. ✅ `get_folder_details` - Get comprehensive folder details with hierarchy
+    - **Description**: Retrieves complete details about a folder including all subfolders and notes in hierarchical structure
+15. ✅ `get_folder_hierarchy_details` - Get folder details with robust hierarchy
+    - **Description**: Provides folder details with a more robust hierarchical structure and metadata
+
+### **🔄 Planned Tools (14 total)**
+
+#### **Core Note Management (2 tools)**
+- 🔄 `update_note` - Modify note content and metadata
+  - **Description**: Updates existing note content, name, or both while preserving creation date
+- 🔄 `delete_note` - Remove notes with confirmation
+  - **Description**: Permanently removes notes from folders with optional confirmation prompts
+
+#### **Folder Operations (2 tools)**
+- 🔄 `delete_folder` - Remove folders with safety checks
+  - **Description**: Deletes folders and their contents with safety checks for empty folders
+- 🔄 `move_note_to_folder` - Organize notes between folders
+  - **Description**: Moves notes from one folder to another, supporting both flat and nested paths
+
+#### **Search & Query (3 tools)**
+- 🔄 `search_notes` - Find notes by content/name/date
+  - **Description**: Searches across all notes for specific text content, names, or date ranges
+- 🔄 `filter_notes` - Advanced filtering with conditions
+  - **Description**: Applies complex filters to notes based on multiple criteria (date, folder, content, etc.)
+- 🔄 `get_notes_by_date_range` - Time-based queries
+  - **Description**: Retrieves notes created or modified within a specific date range
+
+#### **Account & Attachment Management (5 tools)**
+- 🔄 `list_accounts` - Get available accounts (iCloud/local)
+  - **Description**: Lists all available Apple Notes accounts (iCloud, local, etc.)
+- 🔄 `get_account_info` - Account details and folder structure
+  - **Description**: Retrieves detailed information about a specific account and its folder hierarchy
+- 🔄 `add_attachment` - Add files/images to notes
+  - **Description**: Attaches files, images, or other media to existing notes
+- 🔄 `get_attachments` - List note attachments
+  - **Description**: Lists all attachments within a specific note with metadata
+- 🔄 `delete_attachment` - Remove attachments
+  - **Description**: Removes specific attachments from notes while preserving the note content
+
+### **📊 Implementation Progress**
+- **✅ Completed**: 13 tools (52%)
+- **🔄 Planned**: 12 tools (48%)
+- **📈 Total**: 25 tools
+
+---
+
 ## **Current Implementation Status**
 
 ### **Core Note Management**
-- ✅ `list_notes` - Get all notes with filters/pagination
-- ✅ `list_notes_by_folder` - Get notes from specific folder
-- ✅ `create_note` - Create note with body, folder, account
-- 🔄 `get_note` / `read_note` - Retrieve note by ID/name with content
+- ✅ `list_notes` - Get all notes with metadata
+- ✅ `create_note` - Create note with body and folder
+- ✅ `create_note_in_path` - Create note in nested folder path
+- ✅ `read_note_by_name` - Read notes by name in folder
+- ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
 - 🔄 `update_note` - Modify note body/name
 - 🔄 `delete_note` - Remove notes
 
 ### **Folder Operations**
-- ✅ `create_folder` - Make new folders in accounts
-- 🔄 `get_folder` - Retrieve folder info and contents
+- ✅ `list_folders` - Get flat list of folders (backward compatibility)
+- ✅ `list_folders_hierarchy` - Get folder hierarchy with nested structure
+- ✅ `list_folders_with_paths` - Get all folders with full paths
+- ✅ `create_folder` - Create single folder (backward compatibility)
+- ✅ `create_folder_with_path` - Create nested folder structure
+- ✅ `list_notes_by_folder` - List notes from specific folder
+- ✅ `list_notes_by_folder_path` - List notes from nested folder path
+- ✅ `resolve_folder_path` - Resolve folder path to metadata
 - 🔄 `delete_folder` - Remove folders (with safety checks)
-- ✅ `list_folders` - Get folder hierarchy
-- 🔄 `move_note_to_folder` - Organize notes
+- 🔄 `move_note_to_folder` - Organize notes between folders
 
 ### **Search & Query**
 - 🔄 `search_notes` - Find notes by content/name/date
@@ -46,7 +127,9 @@
 
 ### **Current Tools (Server Implementation)**
 
-#### `list_notes`
+#### **Core Note Management**
+
+##### `list_notes`
 ```python
 async def list_notes(ctx: Context) -> str:
     """List all Apple Notes with metadata."""
@@ -55,7 +138,7 @@ async def list_notes(ctx: Context) -> str:
 - **Returns**: List of all notes with metadata
 - **Error Handling**: Graceful error reporting via Context
 
-#### `create_note`
+##### `create_note`
 ```python
 async def create_note(ctx: Context, name: str, body: str, folder_name: str = "Notes") -> str:
     """Create a new Apple Note with specified name, body, and folder."""
@@ -66,59 +149,168 @@ async def create_note(ctx: Context, name: str, body: str, folder_name: str = "No
 - **Error Handling**: Graceful error reporting via Context
 - **AppleScript**: Uses `make new note at targetFolder with properties`
 
-#### `list_notes_by_folder`
+##### `create_note_in_path`
 ```python
-async def list_notes_by_folder(ctx: Context, folder_name: str) -> str:
-    """List all notes from a specific folder."""
+async def create_note_in_path(ctx: Context, name: str, body: str, folder_path: str) -> str:
+    """Create a new note in a nested folder path."""
 ```
 - **Status**: ✅ Implemented
-- **Parameters**: `folder_name` (required) - Name of the folder to list notes from
-- **Returns**: List of notes with metadata (name, folder, creation_date, modification_date)
-- **Error Handling**: Graceful error reporting via Context
-- **AppleScript**: Uses `set targetFolder to folder "{folder_name}"` and iterates through notes
-- **No IDs Required**: Works with folder names only, no need for folder IDs
+- **Parameters**: `name` (required), `body` (required), `folder_path` (required)
+- **Returns**: Created note metadata
+- **Features**: Creates nested folder structure if needed
+- **Example**: `"Work/Projects/2024/Q1"`
 
-#### `create_folder`
+##### `read_note_by_name`
+```python
+async def read_note_by_name(ctx: Context, note_name: str, folder_name: str) -> str:
+    """Read all notes with the given name in the specified folder."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `note_name` (required), `folder_name` (required)
+- **Returns**: All matching notes with full content
+- **Features**: Returns multiple matches if same name exists
+- **Error Handling**: Clear messaging for no matches
+
+##### `read_note_by_name_in_path`
+```python
+async def read_note_by_name_in_path(ctx: Context, note_name: str, folder_path: str) -> str:
+    """Read all notes with the given name in the specified folder path."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `note_name` (required), `folder_path` (required)
+- **Returns**: All matching notes with full content
+- **Features**: Works with nested folder paths
+
+#### **Folder Operations**
+
+##### `list_folders`
+```python
+async def list_folders(ctx: Context) -> str:
+    """List all Apple Notes folders."""
+```
+- **Status**: ✅ Implemented
+- **Returns**: Flat list of folder names
+- **Backward Compatibility**: Maintains original behavior
+
+##### `list_folders_hierarchy`
+```python
+async def list_folders_hierarchy(ctx: Context) -> str:
+    """List all folders with hierarchical structure."""
+```
+- **Status**: ✅ Implemented
+- **Returns**: Nested folder tree structure
+- **Features**: Shows parent-child relationships
+
+##### `list_folders_with_paths`
+```python
+async def list_folders_with_paths(ctx: Context) -> str:
+    """List all folders with their full paths."""
+```
+- **Status**: ✅ Implemented
+- **Returns**: All folders with their complete paths
+- **Example**: `[{"name": "Q1", "path": "Work/Projects/2024/Q1"}]`
+
+##### `create_folder`
 ```python
 async def create_folder(ctx: Context, folder_name: str) -> str:
     """Create a new Apple Notes folder."""
 ```
 - **Status**: ✅ Implemented
-- **Parameters**: `folder_name` (required) - Name of the folder to create
-- **Returns**: Created folder metadata (name, status)
-- **Error Handling**: Graceful error reporting via Context, handles duplicate folder names
-- **AppleScript**: Uses `make new folder with properties {name:"{folder_name}"}`
-- **Integration**: Can be used with create_note to organize notes in new folders
+- **Parameters**: `folder_name` (required)
+- **Returns**: Created folder metadata
+- **Backward Compatibility**: Maintains original behavior
+
+##### `create_folder_with_path`
+```python
+async def create_folder_with_path(ctx: Context, folder_path: str) -> str:
+    """Create a nested folder structure, creating parent folders if needed."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `folder_path` (required)
+- **Returns**: Created folder structure metadata
+- **Features**: Creates parent folders automatically
+- **Example**: `"Work/Projects/2024/Q1"` creates entire hierarchy
+
+##### `list_notes_by_folder`
+```python
+async def list_notes_by_folder(ctx: Context, folder_name: str) -> str:
+    """List all notes from a specific folder."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `folder_name` (required)
+- **Returns**: List of notes with metadata
+- **Backward Compatibility**: Maintains original behavior
+
+##### `list_notes_by_folder_path`
+```python
+async def list_notes_by_folder_path(ctx: Context, folder_path: str) -> str:
+    """List all notes from a specific folder path."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `folder_path` (required)
+- **Returns**: List of notes with metadata
+- **Features**: Works with nested folder paths
+
+##### `resolve_folder_path`
+```python
+async def resolve_folder_path(ctx: Context, folder_path: str) -> str:
+    """Resolve a folder path to get the target folder and its metadata."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `folder_path` (required)
+- **Returns**: Folder metadata and path information
+- **Features**: Validates folder path existence
+
+##### `get_folder_details`
+```python
+async def get_folder_details(ctx: Context, folder_name: str) -> str:
+    """Get comprehensive details about a folder including all subfolders and notes in hierarchy."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `folder_name` (required)
+- **Returns**: Complete folder details with hierarchical structure
+- **Features**: Shows all notes and subfolders in hierarchy, includes metadata
+
+##### `get_folder_hierarchy_details`
+```python
+async def get_folder_hierarchy_details(ctx: Context, folder_name: str) -> str:
+    """Get folder details with a more robust hierarchical structure."""
+```
+- **Status**: ✅ Implemented
+- **Parameters**: `folder_name` (required)
+- **Returns**: Folder details with robust hierarchical structure
+- **Features**: Enhanced hierarchy with better metadata and structure
 
 ---
 
 ## **Planned Tools (To Be Implemented)**
 
+### **Core Note Management**
+
+#### `update_note`
+- **Purpose**: Modify existing note content and metadata
+- **Parameters**: `note_name`, `folder_path`, `new_name` (optional), `new_body` (optional)
+- **Returns**: Updated note metadata
+- **AppleScript**: `tell application "Notes" to set properties of note`
+
+#### `delete_note`
+- **Purpose**: Remove notes from folders
+- **Parameters**: `note_name`, `folder_path`, `confirm` (boolean, optional)
+- **Returns**: Success/failure message
+- **Safety**: Confirmation required for deletion
+
 ### **Folder Operations**
-
-
-
-#### `get_folder`
-- **Purpose**: Retrieve folder information and contents
-- **Parameters**: `folder_id` or `folder_name`
-- **Returns**: Folder metadata and contained notes
-- **AppleScript**: `tell application "Notes" to get folder`
 
 #### `delete_folder`
 - **Purpose**: Remove folders with safety checks
-- **Parameters**: `folder_id`, `force` (boolean, optional)
+- **Parameters**: `folder_path`, `force` (boolean, optional)
 - **Returns**: Success/failure message
 - **Safety**: Check if folder is empty or confirm deletion
-
-#### `list_folders`
-- **Purpose**: Get complete folder hierarchy
-- **Parameters**: `account_name` (optional)
-- **Returns**: Folder tree structure
-- **AppleScript**: `tell application "Notes" to get folders`
+- **AppleScript**: `tell application "Notes" to delete folder`
 
 #### `move_note_to_folder`
-- **Purpose**: Organize notes into folders
-- **Parameters**: `note_id`, `folder_id`
+- **Purpose**: Organize notes between folders
+- **Parameters**: `note_name`, `source_folder_path`, `target_folder_path`
 - **Returns**: Success confirmation
 - **AppleScript**: `tell application "Notes" to move note to folder`
 
@@ -208,28 +400,107 @@ async def create_folder(ctx: Context, folder_name: str) -> str:
 
 ## **Implementation Priority**
 
-### **Phase 1: Essential Folder Operations**
-1. `list_folders` - Foundation for organization
-2. `create_folder` - Basic folder creation
-3. `move_note_to_folder` - Core organization feature
+### **Phase 1: Complete CRUD Operations** ✅ **COMPLETED**
+1. ✅ `list_notes` - List all notes
+2. ✅ `create_note` - Create notes in folders
+3. ✅ `create_note_in_path` - Create notes in nested folders
+4. ✅ `read_note_by_name` - Read notes by name
+5. ✅ `read_note_by_name_in_path` - Read notes from nested paths
+6. ✅ `list_folders` - List folders
+7. ✅ `create_folder` - Create folders
+8. ✅ `create_folder_with_path` - Create nested folders
+9. ✅ `list_notes_by_folder` - List notes from folders
+10. ✅ `list_notes_by_folder_path` - List notes from nested folders
 
-### **Phase 2: Advanced Search**
-1. `filter_notes` - Enhanced search capabilities
-2. `get_notes_by_date_range` - Time-based queries
+### **Phase 2: Update & Delete Operations** 🔄 **IN PROGRESS**
+1. `update_note` - Modify note content and metadata
+2. `delete_note` - Remove notes with confirmation
+3. `delete_folder` - Remove folders with safety checks
+4. `move_note_to_folder` - Organize notes between folders
 
-### **Phase 3: Account & Attachment Management**
-1. `list_accounts` - Account awareness
-2. `add_attachment` - File handling
-3. `get_attachments` - Attachment listing
+### **Phase 3: Advanced Search & Query**
+1. `search_notes` - Find notes by content/name/date
+2. `filter_notes` - Advanced filtering with conditions
+3. `get_notes_by_date_range` - Time-based queries
 
-### **Phase 4: Batch Operations**
+### **Phase 4: Account & Attachment Management**
+1. `list_accounts` - Get available accounts (iCloud/local)
+2. `get_account_info` - Account details and folder structure
+3. `add_attachment` - Add files/images to notes
+4. `get_attachments` - List note attachments
+5. `delete_attachment` - Remove attachments
+
+### **Phase 5: Batch Operations**
 1. `bulk_move_notes` - Mass organization
-2. `export_notes` - Backup functionality
+2. `bulk_delete_notes` - Cleanup operations
+3. `export_notes` - Backup/export functionality
 
-### **Phase 5: Advanced Features**
-1. `bulk_delete_notes` - Cleanup tools
-2. `delete_folder` - Folder management
-3. `get_app_info` - System information
+### **Phase 6: Utility Tools**
+1. `get_app_info` - Notes app version/status
+2. `activate_notes` - Bring app to foreground
+
+---
+
+## **🚀 Usage Examples**
+
+### **Basic Note Operations**
+```python
+# List all notes
+await list_notes()
+
+# Create note in default folder
+await create_note("Meeting Notes", "Team meeting content")
+
+# Create note in specific folder
+await create_note("Project Ideas", "New project concepts", "Work")
+
+# Read note by name
+await read_note_by_name("Meeting Notes", "Work")
+```
+
+### **Nested Folder Operations**
+```python
+# Create nested folder structure
+await create_folder_with_path("Work/Projects/2024/Q1")
+
+# Create note in nested folder
+await create_note_in_path("Sprint Planning", "Sprint planning content", "Work/Projects/2024/Q1")
+
+# List notes from nested folder
+await list_notes_by_folder_path("Work/Projects/2024/Q1")
+
+# Read note from nested folder
+await read_note_by_name_in_path("Sprint Planning", "Work/Projects/2024/Q1")
+```
+
+### **Folder Management**
+```python
+# List all folders (flat)
+await list_folders()
+
+# List folders with hierarchy
+await list_folders_hierarchy()
+
+# List folders with full paths
+await list_folders_with_paths()
+
+# Resolve folder path
+await resolve_folder_path("Work/Projects/2024/Q1")
+
+# Get comprehensive folder details with hierarchy
+await get_folder_details("Work")
+
+# Get folder details with robust hierarchy
+await get_folder_hierarchy_details("Work")
+```
+
+### **Path Notation**
+- **Separator**: `/` (forward slash)
+- **Examples**:
+  - `"Work"` - Root folder
+  - `"Work/Projects"` - Nested folder
+  - `"Work/Projects/2024/Q1"` - Deeply nested folder
+- **Auto-creation**: Parent folders are created automatically
 
 ---
 

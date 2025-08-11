@@ -1,12 +1,13 @@
-from typing import Dict
+from typing import Dict, Any
 from .base_operations import BaseAppleScriptOperations
+from .folder_utils import FolderPathUtils
 
 class CreateFolderOperations(BaseAppleScriptOperations):
     """Operations for creating Apple Notes folders."""
     
     @staticmethod
     async def create_folder(folder_name: str) -> Dict[str, str]:
-        """Create a new folder in Apple Notes."""
+        """Create a new folder in Apple Notes (backward compatibility)."""
         script = f'''
         tell application "Notes"
             try
@@ -39,3 +40,8 @@ class CreateFolderOperations(BaseAppleScriptOperations):
             }
         except Exception as e:
             raise RuntimeError(f"Failed to parse created folder result: {str(e)}")
+    
+    @staticmethod
+    async def create_folder_with_path(folder_path: str) -> Dict[str, Any]:
+        """Create a nested folder structure, creating parent folders if needed."""
+        return await FolderPathUtils.create_nested_folder(folder_path)

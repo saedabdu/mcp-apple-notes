@@ -6,9 +6,7 @@ from .list_notes_by_folder import ListNotesByFolderOperations
 from .create_folder import CreateFolderOperations
 from .read_note import ReadNoteOperations
 from .notes_utilities import AppleScriptNotesUtilities
-
-# Legacy compatibility - keep the old class name
-from .notes_operations import AppleScriptNotes
+from .folder_utils import FolderPathUtils
 
 __all__ = [
     'BaseAppleScriptOperations',
@@ -19,5 +17,5 @@ __all__ = [
     'CreateFolderOperations',
     'ReadNoteOperations',
     'AppleScriptNotesUtilities',
-    'AppleScriptNotes'  # Legacy compatibility
+    'FolderPathUtils'
 ]
