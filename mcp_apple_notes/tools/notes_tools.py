@@ -16,10 +16,6 @@ class NotesTools:
         """List all notes."""
         return await ListNotesOperations.list_all_notes()
     
-    async def list_folders(self) -> List[str]:
-        """List all folder names (root and subfolders)."""
-        return await ListFoldersOperations.list_folders()
-    
     async def create_note(self, name: str, body: str, folder_name: str = "Notes") -> Dict[str, str]:
         """Create a new note (backward compatibility)."""
         return await CreateNoteOperations.create_note(name, body, folder_name)
@@ -63,9 +59,8 @@ class NotesTools:
     async def get_folder_hierarchy_details(self, folder_name: str) -> Dict[str, Any]:
         """Get folder details with a more robust hierarchical structure."""
         return await FolderDetailsOperations.get_folder_hierarchy_details(folder_name)
-    
-    async def get_folders_structure(self) -> str:
-        """Get complete folder structure - return raw AppleScript data."""
-        # Return exactly what AppleScript gives us
-        return await FolderStructureOperations.get_folders_structure()
+
+    async def list_folder_structure(self) -> str:
+        """List the complete folder structure with hierarchical tree format."""
+        return await FolderStructureOperations.get_filtered_folders_structure()
 

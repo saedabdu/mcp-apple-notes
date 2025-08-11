@@ -21,25 +21,6 @@ async def list_notes(ctx: Context) -> str:
         raise
 
 @mcp.tool()
-async def list_folders(ctx: Context) -> str:
-    """List all folder names (root and subfolders)."""
-    try:
-        folder_names = await notes_tools.list_folders()
-        
-        if not folder_names:
-            return "No folders found"
-        
-        # Format as a simple list
-        result = f"All Folders ({len(folder_names)} total):\n"
-        for i, name in enumerate(folder_names, 1):
-            result += f"{i}. {name}\n"
-        
-        return result
-    except Exception as e:
-        await ctx.error(f"Error listing folders: {str(e)}")
-        raise
-
-@mcp.tool()
 async def create_note(ctx: Context, name: str, body: str, folder_name: str = "Notes") -> str:
     """Create a new Apple Note with specified name, body, and folder."""
     try:
@@ -237,18 +218,18 @@ async def get_folder_hierarchy_details(ctx: Context, folder_name: str) -> str:
         raise
 
 @mcp.tool()
-async def get_folders_structure(ctx: Context) -> str:
-    """Get complete folder structure - return raw AppleScript data."""
+async def list_folder_structure(ctx: Context) -> str:
+    """List the complete folder structure with hierarchical tree format."""
     try:
-        folder_structure = await notes_tools.get_folders_structure()
+        folder_structure = await notes_tools.list_folder_structure()
         
         if not folder_structure:
             return "No folders found in Apple Notes"
         
-        # Return raw AppleScript result exactly as received
-        return f"📋 Raw AppleScript Output:\n\n{folder_structure}"
+        # Return filtered AppleScript result
+        return f"📁 Apple Notes Folder Structure:\n\n{folder_structure}"
     except Exception as e:
-        await ctx.error(f"Error getting folders structure: {str(e)}")
+        await ctx.error(f"Error listing folder structure: {str(e)}")
         raise
 
 # Run the server
