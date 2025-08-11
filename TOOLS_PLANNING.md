@@ -2,7 +2,7 @@
 
 ## **📋 Complete Tools Summary**
 
-### **✅ Currently Available Tools (13 total)**
+### **✅ Currently Available Tools (11 total)**
 
 #### **Core Note Management (5 tools)**
 1. ✅ `list_notes` - List all notes with metadata
@@ -16,22 +16,18 @@
 5. ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
    - **Description**: Retrieves all notes with a specific name from a nested folder path, including full content
 
-#### **Folder Operations (8 tools)**
-6. ✅ `list_folders` - List folders with hierarchical structure
-   - **Description**: Returns folders with their full paths showing the hierarchical structure
-9. ✅ `create_folder` - Create single folder (backward compatibility)
-   - **Description**: Creates a single folder at the root level
-10. ✅ `create_folder_with_path` - Create nested folder structure
-    - **Description**: Creates a nested folder structure, automatically creating any missing parent folders
-11. ✅ `list_notes_by_folder` - List notes from folder (backward compatibility)
-    - **Description**: Lists all notes within a single folder with their metadata
-12. ✅ `list_notes_by_folder_path` - List notes from nested folder path
-    - **Description**: Lists all notes within a nested folder path with their metadata
-13. ✅ `resolve_folder_path` - Resolve folder path to metadata
-    - **Description**: Validates and resolves a folder path, returning folder metadata and existence status
-14. ✅ `get_folder_details` - Get comprehensive folder details with hierarchy
+#### **Folder Operations (6 tools)**
+6. ✅ `list_folder_structure` - List complete folder structure with hierarchy
+   - **Description**: Returns the complete folder structure in hierarchical tree format
+7. ✅ `create_folder` - Create folder with optional path
+   - **Description**: Creates a folder with specified name, optionally within a nested path. If no path given, creates at root level.
+8. ✅ `list_notes_by_folder` - List notes from folder (backward compatibility)
+   - **Description**: Lists all notes within a single folder with their metadata
+9. ✅ `list_notes_by_folder_path` - List notes from nested folder path
+   - **Description**: Lists all notes within a nested folder path with their metadata
+10. ✅ `get_folder_details` - Get comprehensive folder details with hierarchy
     - **Description**: Retrieves complete details about a folder including all subfolders and notes in hierarchical structure
-15. ✅ `get_folder_hierarchy_details` - Get folder details with robust hierarchy
+11. ✅ `get_folder_hierarchy_details` - Get folder details with robust hierarchy
     - **Description**: Provides folder details with a more robust hierarchical structure and metadata
 
 ### **🔄 Planned Tools (14 total)**
@@ -42,9 +38,11 @@
 - 🔄 `delete_note` - Remove notes with confirmation
   - **Description**: Permanently removes notes from folders with optional confirmation prompts
 
-#### **Folder Operations (2 tools)**
+#### **Folder Operations (1 tool)**
 - 🔄 `delete_folder` - Remove folders with safety checks
   - **Description**: Deletes folders and their contents with safety checks for empty folders
+
+#### **Note Organization (1 tool)**
 - 🔄 `move_note_to_folder` - Organize notes between folders
   - **Description**: Moves notes from one folder to another, supporting both flat and nested paths
 
@@ -69,8 +67,8 @@
   - **Description**: Removes specific attachments from notes while preserving the note content
 
 ### **📊 Implementation Progress**
-- **✅ Completed**: 13 tools (52%)
-- **🔄 Planned**: 12 tools (48%)
+- **✅ Completed**: 11 tools (44%)
+- **🔄 Planned**: 14 tools (56%)
 - **📈 Total**: 25 tools
 
 ---
@@ -87,14 +85,12 @@
 - 🔄 `delete_note` - Remove notes
 
 ### **Folder Operations**
-- ✅ `list_folders` - Get flat list of folders (backward compatibility)
-- ✅ `list_folders_hierarchy` - Get folder hierarchy with nested structure
-- ✅ `list_folders_with_paths` - Get all folders with full paths
-- ✅ `create_folder` - Create single folder (backward compatibility)
-- ✅ `create_folder_with_path` - Create nested folder structure
+- ✅ `list_folder_structure` - Get complete folder structure with hierarchy
+- ✅ `create_folder` - Create folder with optional path
 - ✅ `list_notes_by_folder` - List notes from specific folder
 - ✅ `list_notes_by_folder_path` - List notes from nested folder path
-- ✅ `resolve_folder_path` - Resolve folder path to metadata
+- ✅ `get_folder_details` - Get comprehensive folder details with hierarchy
+- ✅ `get_folder_hierarchy_details` - Get folder details with robust hierarchy
 - 🔄 `delete_folder` - Remove folders (with safety checks)
 - 🔄 `move_note_to_folder` - Organize notes between folders
 
@@ -183,53 +179,30 @@ async def read_note_by_name_in_path(ctx: Context, note_name: str, folder_path: s
 
 #### **Folder Operations**
 
-##### `list_folders`
+##### `list_folder_structure`
 ```python
-async def list_folders(ctx: Context) -> str:
-    """List all Apple Notes folders."""
+async def list_folder_structure(ctx: Context) -> str:
+    """List the complete folder structure with hierarchical tree format."""
 ```
 - **Status**: ✅ Implemented
-- **Returns**: Flat list of folder names
-- **Backward Compatibility**: Maintains original behavior
-
-##### `list_folders_hierarchy`
-```python
-async def list_folders_hierarchy(ctx: Context) -> str:
-    """List all folders with hierarchical structure."""
-```
-- **Status**: ✅ Implemented
-- **Returns**: Nested folder tree structure
-- **Features**: Shows parent-child relationships
-
-##### `list_folders_with_paths`
-```python
-async def list_folders_with_paths(ctx: Context) -> str:
-    """List all folders with their full paths."""
-```
-- **Status**: ✅ Implemented
-- **Returns**: All folders with their complete paths
-- **Example**: `[{"name": "Q1", "path": "Work/Projects/2024/Q1"}]`
+- **Returns**: Complete folder structure in hierarchical tree format
+- **Features**: Shows parent-child relationships in tree structure
 
 ##### `create_folder`
 ```python
-async def create_folder(ctx: Context, folder_name: str) -> str:
-    """Create a new Apple Notes folder."""
+async def create_folder(ctx: Context, folder_name: str, folder_path: str = "") -> str:
+    """Create a folder in Apple Notes."""
 ```
 - **Status**: ✅ Implemented
-- **Parameters**: `folder_name` (required)
+- **Parameters**: 
+  - `folder_name` (required) - Name of the folder to create
+  - `folder_path` (optional) - Path where to create the folder. If empty, creates at root level.
 - **Returns**: Created folder metadata
-- **Backward Compatibility**: Maintains original behavior
-
-##### `create_folder_with_path`
-```python
-async def create_folder_with_path(ctx: Context, folder_path: str) -> str:
-    """Create a nested folder structure, creating parent folders if needed."""
-```
-- **Status**: ✅ Implemented
-- **Parameters**: `folder_path` (required)
-- **Returns**: Created folder structure metadata
-- **Features**: Creates parent folders automatically
-- **Example**: `"Work/Projects/2024/Q1"` creates entire hierarchy
+- **Features**: Creates folder at root level or within specified path
+- **Error Handling**: Validates paths and provides helpful error messages for invalid inputs
+- **Examples**: 
+  - `create_folder("Work")` - Creates "Work" at root level
+  - `create_folder("Q1", "Work/Projects/2024")` - Creates "Q1" inside "Work/Projects/2024"
 
 ##### `list_notes_by_folder`
 ```python
@@ -251,15 +224,7 @@ async def list_notes_by_folder_path(ctx: Context, folder_path: str) -> str:
 - **Returns**: List of notes with metadata
 - **Features**: Works with nested folder paths
 
-##### `resolve_folder_path`
-```python
-async def resolve_folder_path(ctx: Context, folder_path: str) -> str:
-    """Resolve a folder path to get the target folder and its metadata."""
-```
-- **Status**: ✅ Implemented
-- **Parameters**: `folder_path` (required)
-- **Returns**: Folder metadata and path information
-- **Features**: Validates folder path existence
+
 
 ##### `get_folder_details`
 ```python
@@ -406,11 +371,11 @@ async def get_folder_hierarchy_details(ctx: Context, folder_name: str) -> str:
 3. ✅ `create_note_in_path` - Create notes in nested folders
 4. ✅ `read_note_by_name` - Read notes by name
 5. ✅ `read_note_by_name_in_path` - Read notes from nested paths
-6. ✅ `list_folders` - List folders
-7. ✅ `create_folder` - Create folders
-8. ✅ `create_folder_with_path` - Create nested folders
-9. ✅ `list_notes_by_folder` - List notes from folders
-10. ✅ `list_notes_by_folder_path` - List notes from nested folders
+6. ✅ `list_folder_structure` - List complete folder structure
+7. ✅ `create_folder` - Create folder with optional path
+8. ✅ `list_notes_by_folder` - List notes from folders
+9. ✅ `list_notes_by_folder_path` - List notes from nested folders
+10. ✅ `get_folder_details` - Get comprehensive folder details
 
 ### **Phase 2: Update & Delete Operations** 🔄 **IN PROGRESS**
 1. `update_note` - Modify note content and metadata
@@ -460,8 +425,11 @@ await read_note_by_name("Meeting Notes", "Work")
 
 ### **Nested Folder Operations**
 ```python
-# Create nested folder structure
-await create_folder_with_path("Work/Projects/2024/Q1")
+# Create folder structure step by step
+await create_folder("Work")
+await create_folder("Projects", "Work")
+await create_folder("2024", "Work/Projects")
+await create_folder("Q1", "Work/Projects/2024")
 
 # Create note in nested folder
 await create_note_in_path("Sprint Planning", "Sprint planning content", "Work/Projects/2024/Q1")
@@ -475,17 +443,22 @@ await read_note_by_name_in_path("Sprint Planning", "Work/Projects/2024/Q1")
 
 ### **Folder Management**
 ```python
-# List all folders (flat)
-await list_folders()
+# List complete folder structure with hierarchy
+await list_folder_structure()
 
-# List folders with hierarchy
-await list_folders_hierarchy()
+# Create folder at root level
+await create_folder("Work")
 
-# List folders with full paths
-await list_folders_with_paths()
+# Create folder within existing path
+await create_folder("Q1", "Work/Projects/2024")
 
-# Resolve folder path
-await resolve_folder_path("Work/Projects/2024/Q1")
+# List notes from specific folder
+await list_notes_by_folder("Work")
+
+# List notes from nested folder path
+await list_notes_by_folder_path("Work/Projects/2024/Q1")
+
+
 
 # Get comprehensive folder details with hierarchy
 await get_folder_details("Work")
@@ -500,7 +473,35 @@ await get_folder_hierarchy_details("Work")
   - `"Work"` - Root folder
   - `"Work/Projects"` - Nested folder
   - `"Work/Projects/2024/Q1"` - Deeply nested folder
-- **Auto-creation**: Parent folders are created automatically
+- **Folder Creation**: Use `create_folder(folder_name, folder_path)` where:
+  - `folder_name` is the name of the folder to create
+  - `folder_path` is the optional path where to create it (empty for root level)
+
+### **Error Handling for Invalid Paths**
+When users provide incorrect folder paths, the system provides helpful error messages:
+
+#### **Common Path Errors:**
+1. **Non-existent Path**: `create_folder("Q1", "Work/Projects/2024")` when "Work/Projects/2024" doesn't exist
+   - **Error**: "Invalid folder path 'Work/Projects/2024'. The specified path does not exist."
+   - **Solution**: Create parent folders first or use existing path
+
+2. **Invalid Characters**: `create_folder("Test", "Work/Projects<2024")`
+   - **Error**: "Folder path contains invalid character '<'"
+   - **Solution**: Remove invalid characters
+
+3. **Invalid Format**: `create_folder("Test", "Work//Projects")`
+   - **Error**: "Folder path contains invalid double slashes"
+   - **Solution**: Use single slashes between folder names
+
+4. **Empty Folder Name**: `create_folder("", "Work")`
+   - **Error**: "Folder name cannot be empty"
+   - **Solution**: Provide a valid folder name
+
+#### **Helpful Error Messages Include:**
+- Clear description of the problem
+- Suggestions for correction
+- Examples of valid usage
+- Guidance on creating parent folders
 
 ---
 
@@ -517,6 +518,7 @@ await get_folder_hierarchy_details("Work")
 - **Permission Denied**: Handle AppleScript permission issues
 - **Network Issues**: Handle iCloud connectivity problems
 - **Invalid Parameters**: Validate input before processing
+- **Invalid Folder Paths**: Provide helpful error messages with suggestions for correction
 
 ---
 

@@ -41,13 +41,30 @@ async def list_notes_by_folder(ctx: Context, folder_name: str) -> str:
         raise
 
 @mcp.tool()
-async def create_folder(ctx: Context, folder_name: str) -> str:
-    """Create a new Apple Notes folder."""
+async def create_folder(ctx: Context, folder_name: str, folder_path: str = "") -> str:
+    """Create a folder in Apple Notes.
+    
+    Args:
+        folder_name: Name of the folder to create
+        folder_path: Optional path where to create the folder (e.g., "Work/Projects"). If empty, creates at root level.
+    """
     try:
-        folder = await notes_tools.create_folder(folder_name)
+        folder = await notes_tools.create_folder(folder_name, folder_path)
         return str(folder)
+    except ValueError as e:
+        # Handle validation errors with clear messages
+        error_msg = f"Invalid input: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
+    except RuntimeError as e:
+        # Handle AppleScript errors with helpful context
+        error_msg = str(e)
+        await ctx.error(error_msg)
+        raise RuntimeError(error_msg)
     except Exception as e:
-        await ctx.error(f"Error creating folder: {str(e)}")
+        # Handle unexpected errors
+        error_msg = f"Unexpected error creating folder '{folder_name}' in path '{folder_path}': {str(e)}"
+        await ctx.error(error_msg)
         raise
 
 @mcp.tool()
@@ -72,16 +89,6 @@ async def read_note_by_name(ctx: Context, note_name: str, folder_name: str) -> s
             
     except Exception as e:
         await ctx.error(f"Error reading note: {str(e)}")
-        raise
-
-@mcp.tool()
-async def create_folder_with_path(ctx: Context, folder_path: str) -> str:
-    """Create a nested folder structure, creating parent folders if needed."""
-    try:
-        folder = await notes_tools.create_folder_with_path(folder_path)
-        return str(folder)
-    except Exception as e:
-        await ctx.error(f"Error creating folder with path: {str(e)}")
         raise
 
 @mcp.tool()
@@ -128,15 +135,7 @@ async def read_note_by_name_in_path(ctx: Context, note_name: str, folder_path: s
         await ctx.error(f"Error reading note by path: {str(e)}")
         raise
 
-@mcp.tool()
-async def resolve_folder_path(ctx: Context, folder_path: str) -> str:
-    """Resolve a folder path to get the target folder and its metadata."""
-    try:
-        folder_info = await notes_tools.resolve_folder_path(folder_path)
-        return str(folder_info)
-    except Exception as e:
-        await ctx.error(f"Error resolving folder path: {str(e)}")
-        raise
+
 
 @mcp.tool()
 async def get_folder_details(ctx: Context, folder_name: str) -> str:
