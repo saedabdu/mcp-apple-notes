@@ -114,13 +114,24 @@ class NotesTools:
             return False
     
 
-    async def create_note(self, name: str, body: str, folder_name: str = "Notes") -> Dict[str, str]:
-        """Create a new note (backward compatibility)."""
-        return await CreateNoteOperations.create_note(name, body, folder_name)
-    
-    async def create_note_in_path(self, name: str, body: str, folder_path: str) -> Dict[str, str]:
-        """Create a new note in a nested folder path."""
-        return await CreateNoteOperations.create_note_in_path(name, body, folder_path)
+    async def create_note(self, name: str, body: str, folder_path: str = "Notes") -> Dict[str, str]:
+        """Create a new note with specified name, body, and folder path.
+        
+        This unified method handles both simple folders and nested paths.
+        The folder path must exist before creating the note.
+        Special characters in name and body are automatically escaped for AppleScript compatibility.
+        
+        Args:
+            name: Name of the note (cannot be empty or contain only whitespace)
+            body: Content of the note (supports all characters including quotes and backslashes)
+            folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). 
+                        Must exist before creating note. Defaults to "Notes".
+                        
+        Raises:
+            ValueError: If note name is empty, contains only whitespace, or contains invalid characters
+            RuntimeError: If the specified folder path does not exist
+        """
+        return await CreateNoteOperations.create_note(name, body, folder_path)
     
     async def create_folder(self, folder_name: str, folder_path: str = "") -> Dict[str, Any]:
         """Create a folder in Apple Notes.

@@ -2,33 +2,33 @@
 
 ## **📋 Complete Tools Summary**
 
-### **✅ Currently Available Tools (11 total)**
+### **✅ Currently Available Tools (10 total)**
 
-#### **Core Note Management (5 tools)**
-1. ✅ `create_note` - Create note in folder (backward compatibility)
-   - **Description**: Creates a new note with specified name and content in a single folder
-2. ✅ `create_note_in_path` - Create note in nested folder path
-   - **Description**: Creates a new note in a nested folder structure, automatically creating parent folders if needed
-3. ✅ `read_note_by_name` - Read notes by name in folder
+#### **Core Note Management (4 tools)**
+1. ✅ `create_note` - Create note with unified folder support
+   - **Description**: Creates a new note with specified name and content. Handles both simple folders and nested paths automatically.
+   - **Parameters**: `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes")
+   - **Features**: Auto-creates parent folders for nested paths, supports both simple and complex folder structures
+2. ✅ `read_note_by_name` - Read notes by name in folder
    - **Description**: Retrieves all notes with a specific name from a single folder, including full content
-4. ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
+3. ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
    - **Description**: Retrieves all notes with a specific name from a nested folder path, including full content
-5. ✅ `list_notes_with_structure` - List complete folder structure with notes included
+4. ✅ `list_notes_with_structure` - List complete folder structure with notes included
    - **Description**: Returns the complete folder structure with notes included in hierarchical tree format
 
 #### **Folder Operations (6 tools)**
-6. ✅ `list_folder_with_structure` - List complete folder structure with hierarchy
+5. ✅ `list_folder_with_structure` - List complete folder structure with hierarchy
    - **Description**: Returns the complete folder structure in hierarchical tree format
-7. ✅ `create_folder` - Create folder with optional path
+6. ✅ `create_folder` - Create folder with optional path
    - **Description**: Creates a folder with specified name, optionally within a nested path. If no path given, creates at root level.
-8. ✅ `get_folder_details` - Get comprehensive folder details with hierarchy
+7. ✅ `get_folder_details` - Get comprehensive folder details with hierarchy
    - **Description**: Retrieves complete details about a folder including all subfolders and notes in hierarchical structure
-9. ✅ `rename_folder` - Rename folder with path support
+8. ✅ `rename_folder` - Rename folder with path support
    - **Description**: Renames a folder by providing the folder path, current name, and new name
-10. ✅ `move_folder` - Move folder between locations
-    - **Description**: Moves a folder from one location to another, supporting root level and nested paths
+9. ✅ `move_folder` - Move folder between locations
+   - **Description**: Moves a folder from one location to another, supporting root level and nested paths
 
-### **🔄 Planned Tools (16 total)**
+### **🔄 Planned Tools (17 total)**
 
 #### **Core Note Management (2 tools)**
 - 🔄 `update_note` - Modify note content and metadata
@@ -75,8 +75,8 @@
   - **Description**: Brings Apple Notes application to the foreground
 
 ### **📊 Implementation Progress**
-- **✅ Completed**: 11 tools (41%)
-- **🔄 Planned**: 16 tools (59%)
+- **✅ Completed**: 10 tools (37%)
+- **🔄 Planned**: 17 tools (63%)
 - **📈 Total**: 27 tools
 
 ---
@@ -84,6 +84,13 @@
 ## **Current Implementation Status**
 
 ### **🔄 Recent Changes**
+- **✅ UNIFIED**: `create_note` tool now handles both simple and nested paths
+  - **Improvement**: Single tool for all note creation scenarios
+  - **Features**: Auto-creates parent folders, supports both simple folders and nested paths
+  - **Backward Compatibility**: Maintains existing functionality
+- **❌ REMOVED**: `create_note_in_path` tool (completely removed)
+  - **Reason**: Functionality now available in unified `create_note` tool
+  - **Result**: Cleaner, more maintainable codebase
 - **❌ REMOVED**: `list_notes` tool (redundant with `list_notes_with_structure`)
   - **Reason**: `list_notes_with_structure` provides better visual organization and includes all note information
   - **Alternative**: Use `list_notes_with_structure` for comprehensive note listing with hierarchical view
@@ -104,8 +111,7 @@
 - **Reason**: Added comprehensive folder moving capabilities with validation
 
 ### **Core Note Management**
-- ✅ `create_note` - Create note with body and folder
-- ✅ `create_note_in_path` - Create note in nested folder path
+- ✅ `create_note` - Create note with unified folder support (simple and nested paths)
 - ✅ `read_note_by_name` - Read notes by name in folder
 - ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
 - ✅ `list_notes_with_structure` - Get complete folder structure with notes included
@@ -151,29 +157,37 @@
 
 #### **Core Note Management**
 
-
-
-##### `create_note`
+##### `create_note` (UNIFIED)
 ```python
-async def create_note(ctx: Context, name: str, body: str, folder_name: str = "Notes") -> str:
-    """Create a new Apple Note with specified name, body, and folder."""
+async def create_note(ctx: Context, name: str, body: str, folder_path: str = "Notes") -> str:
+    """Create a new note with specified name and content.
+    
+    This unified tool handles both simple folders and nested paths.
+    The folder path must exist before creating the note.
+    """
 ```
-- **Status**: ✅ Implemented
-- **Parameters**: `name` (required), `body` (required), `folder_name` (optional, default: "Notes")
+- **Status**: ✅ Implemented (Unified)
+- **Parameters**: `name` (required), `body` (required), `folder_path` (optional, default: "Notes")
 - **Returns**: Created note metadata (name, folder, creation_date, modification_date)
-- **Error Handling**: Graceful error reporting via Context
-- **AppleScript**: Uses `make new note at targetFolder with properties`
-
-##### `create_note_in_path`
-```python
-async def create_note_in_path(ctx: Context, name: str, body: str, folder_path: str) -> str:
-    """Create a new note in a nested folder path."""
-```
-- **Status**: ✅ Implemented
-- **Parameters**: `name` (required), `body` (required), `folder_path` (required)
-- **Returns**: Created note metadata
-- **Features**: Creates nested folder structure if needed
-- **Example**: `"Work/Projects/2024/Q1"`
+- **Features**: 
+  - Handles both simple folders and nested paths
+  - Validates that folder path exists before creating note
+  - Throws error if folder path doesn't exist
+  - Automatically escapes quotes and backslashes for AppleScript compatibility
+  - Smart path detection and validation
+  - Comprehensive error handling
+- **Error Handling**: Throws RuntimeError if folder path doesn't exist
+- **Examples**:
+  ```python
+  # Simple folder (must exist)
+  await create_note("Meeting Notes", "Content", "Work")
+  
+  # Nested path (must exist)
+  await create_note("Sprint Planning", "Content", "Work/Projects/2024/Q1")
+  
+  # Special characters (automatically escaped)
+  await create_note("Code Note", 'Path: "C:\\Users\\Name\\file.txt"', "Work")
+  ```
 
 ##### `read_note_by_name`
 ```python
@@ -399,16 +413,15 @@ async def move_folder(ctx: Context, source_path: str, folder_name: str, target_p
 ## **Implementation Priority**
 
 ### **Phase 1: Complete CRUD Operations** ✅ **COMPLETED**
-1. ✅ `create_note` - Create notes in folders
-2. ✅ `create_note_in_path` - Create notes in nested folders
-3. ✅ `read_note_by_name` - Read notes by name
-4. ✅ `read_note_by_name_in_path` - Read notes from nested paths
-5. ✅ `list_notes_with_structure` - List complete folder structure with notes
-6. ✅ `list_folder_with_structure` - List complete folder structure
-7. ✅ `create_folder` - Create folder with optional path
-8. ✅ `get_folder_details` - Get comprehensive folder details
-9. ✅ `rename_folder` - Rename folder with path support
-10. ✅ `move_folder` - Move folder between locations
+1. ✅ `create_note` - Create notes with unified folder support (simple and nested paths)
+2. ✅ `read_note_by_name` - Read notes by name
+3. ✅ `read_note_by_name_in_path` - Read notes from nested paths
+4. ✅ `list_notes_with_structure` - List complete folder structure with notes
+5. ✅ `list_folder_with_structure` - List complete folder structure
+6. ✅ `create_folder` - Create folder with optional path
+7. ✅ `get_folder_details` - Get comprehensive folder details
+8. ✅ `rename_folder` - Rename folder with path support
+9. ✅ `move_folder` - Move folder between locations
 
 ### **Phase 2: Update & Delete Operations** 🔄 **IN PROGRESS**
 1. `update_note` - Modify note content and metadata
@@ -448,8 +461,11 @@ await list_notes_with_structure()
 # Create note in default folder
 await create_note("Meeting Notes", "Team meeting content")
 
-# Create note in specific folder
+# Create note in simple folder
 await create_note("Project Ideas", "New project concepts", "Work")
+
+# Create note in nested folder (auto-creates parent folders)
+await create_note("Sprint Planning", "Sprint planning content", "Work/Projects/2024/Q1")
 
 # Read note by name
 await read_note_by_name("Meeting Notes", "Work")
@@ -463,8 +479,8 @@ await create_folder("Projects", "Work")
 await create_folder("2024", "Work/Projects")
 await create_folder("Q1", "Work/Projects/2024")
 
-# Create note in nested folder
-await create_note_in_path("Sprint Planning", "Sprint planning content", "Work/Projects/2024/Q1")
+# Create note in nested folder (must exist)
+await create_note("Sprint Planning", "Sprint planning content", "Work/Projects/2024/Q1")
 
 # Read note from nested folder
 await read_note_by_name_in_path("Sprint Planning", "Work/Projects/2024/Q1")
@@ -511,6 +527,10 @@ await move_folder("Work/Projects", "Projects", "Active Work")
 - **Folder Creation**: Use `create_folder(folder_name, folder_path)` where:
   - `folder_name` is the name of the folder to create
   - `folder_path` is the optional path where to create it (empty for root level)
+- **Note Creation**: Use `create_note(name, body, folder_path)` where:
+  - `folder_path` can be simple folder or nested path
+  - Must exist before creating note
+  - Special characters in name and body are automatically escaped
 
 ### **Error Handling for Invalid Paths**
 When users provide incorrect folder paths, the system provides helpful error messages:

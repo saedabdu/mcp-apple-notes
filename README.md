@@ -87,12 +87,34 @@ Ensure your MCP client has permission to:
 
 ## Available Tools
 
+### **🆕 Unified Note Creation**
+The `create_note` tool now handles both simple folders and nested paths automatically:
+
+```python
+# Simple folder
+await create_note("Meeting Notes", "Content", "Work")
+
+# Nested path (must exist)
+await create_note("Sprint Planning", "Content", "Work/Projects/2024/Q1")
+
+# Special characters (automatically escaped)
+await create_note("Code Note", 'Path: "C:\\Users\\Name\\file.txt"', "Work")
+```
+
+**Features:**
+- ✅ **Smart Path Detection**: Automatically detects simple vs nested paths
+- ✅ **Path Validation**: Ensures folder path exists before creating note
+- ✅ **Character Escaping**: Automatically handles quotes and backslashes
+- ✅ **Backward Compatible**: Works with existing simple folder usage
+- ✅ **Error Handling**: Comprehensive validation and error messages
+
+### **Tool Reference**
+
 | Tool | Description | Parameters |
 |------|-------------|------------|
 | `list_notes_with_structure` | List complete folder structure with notes included | None |
 | `list_folder_with_structure` | List complete folder structure | None |
-| `create_note` | Create a new note | `name` (string), `body` (string), `folder_name` (string, optional) |
-| `create_note_in_path` | Create a new note in nested folder path | `name` (string), `body` (string), `folder_path` (string) |
+| `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes") |
 | `read_note_by_name` | Read notes by name in folder | `note_name` (string), `folder_name` (string) |
 | `read_note_by_name_in_path` | Read notes by name in nested folder path | `note_name` (string), `folder_path` (string) |
 | `create_folder` | Create folder with optional path | `folder_name` (string), `folder_path` (string, optional) |

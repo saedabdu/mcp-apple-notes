@@ -12,11 +12,26 @@ notes_tools = NotesTools()
 
 
 @mcp.tool()
-async def create_note(ctx: Context, name: str, body: str, folder_name: str = "Notes") -> str:
-    """Create a new note with specified name and content in a single folder."""
+async def create_note(ctx: Context, name: str, body: str, folder_path: str = "Notes") -> str:
+    """Create a new note with specified name and content.
+    
+    This unified tool handles both simple folders and nested paths.
+    The folder path must exist before creating the note.
+    
+    Args:
+        name: Name of the note (cannot be empty or contain only whitespace)
+        body: Content of the note
+        folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). 
+                    Must exist before creating note. Defaults to "Notes".
+    """
     try:
-        note = await notes_tools.create_note(name, body, folder_name)
+        note = await notes_tools.create_note(name, body, folder_path)
         return str(note)
+    except ValueError as e:
+        # Handle validation errors with clear messages
+        error_msg = f"Invalid input: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
     except Exception as e:
         await ctx.error(f"Error creating note: {str(e)}")
         raise
@@ -70,16 +85,6 @@ async def read_note_by_name(ctx: Context, note_name: str, folder_name: str) -> s
             
     except Exception as e:
         await ctx.error(f"Error reading note: {str(e)}")
-        raise
-
-@mcp.tool()
-async def create_note_in_path(ctx: Context, name: str, body: str, folder_path: str) -> str:
-    """Create a new note in a nested folder path."""
-    try:
-        note = await notes_tools.create_note_in_path(name, body, folder_path)
-        return str(note)
-    except Exception as e:
-        await ctx.error(f"Error creating note in path: {str(e)}")
         raise
 
 @mcp.tool()
