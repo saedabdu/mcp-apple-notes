@@ -5,6 +5,9 @@ from .folder_utils import FolderPathUtils
 class CreateFolderOperations(BaseAppleScriptOperations):
     """Operations for creating Apple Notes folders."""
     
+    # Maximum nesting depth allowed by Apple Notes
+    MAX_NESTING_DEPTH = 5
+    
     @staticmethod
     def _validate_folder_name(folder_name: str) -> str:
         """Validate and clean folder name."""
@@ -45,6 +48,34 @@ class CreateFolderOperations(BaseAppleScriptOperations):
                 raise ValueError(f"Folder path contains invalid character '{char}'")
         
         return folder_path
+    
+    @staticmethod
+    def _validate_nesting_depth(folder_path: str, folder_name: str) -> None:
+        """Validate that the folder creation won't exceed maximum nesting depth.
+        
+        Args:
+            folder_path: The path where the folder will be created
+            folder_name: The name of the folder to create
+            
+        Raises:
+            ValueError: If the nesting depth would exceed the maximum allowed
+        """
+        # Count the depth of the existing path
+        path_depth = 0
+        if folder_path:
+            path_components = folder_path.split('/')
+            path_depth = len([comp for comp in path_components if comp.strip()])
+        
+        # Total depth will be path_depth + 1 (for the new folder)
+        total_depth = path_depth + 1
+        
+        if total_depth > CreateFolderOperations.MAX_NESTING_DEPTH:
+            raise ValueError(
+                f"Cannot create folder '{folder_name}' in path '{folder_path}'. "
+                f"This would create a nesting depth of {total_depth} levels, "
+                f"which exceeds the maximum allowed depth of {CreateFolderOperations.MAX_NESTING_DEPTH} levels. "
+                f"Please create the folder at a higher level in the hierarchy."
+            )
     
     @staticmethod
     async def _check_path_exists(folder_path: str) -> bool:
@@ -116,7 +147,8 @@ class CreateFolderOperations(BaseAppleScriptOperations):
         folder_name = CreateFolderOperations._validate_folder_name(folder_name)
         
         if not folder_path:
-            # Create at root level
+            # Create at root level - validate nesting depth
+            CreateFolderOperations._validate_nesting_depth("", folder_name)
             return await CreateFolderOperations._create_root_folder(folder_name)
         else:
             # Validate and clean folder path
@@ -124,7 +156,11 @@ class CreateFolderOperations(BaseAppleScriptOperations):
                 folder_path = CreateFolderOperations._validate_folder_path(folder_path)
                 if not folder_path:
                     # Empty path after validation, create at root level
+                    CreateFolderOperations._validate_nesting_depth("", folder_name)
                     return await CreateFolderOperations._create_root_folder(folder_name)
+                
+                # Validate nesting depth before checking path existence
+                CreateFolderOperations._validate_nesting_depth(folder_path, folder_name)
                 
                 # Check if the parent path exists
                 path_exists = await CreateFolderOperations._check_path_exists(folder_path)

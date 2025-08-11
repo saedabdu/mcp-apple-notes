@@ -2,11 +2,12 @@ from typing import List, Dict, Any, Optional
 from ..applescript.list_notes import ListNotesOperations
 from ..applescript.create_note import CreateNoteOperations
 from ..applescript.list_folders import ListFoldersOperations
-from ..applescript.list_notes_by_folder import ListNotesByFolderOperations
 from ..applescript.create_folder import CreateFolderOperations
 from ..applescript.read_note import ReadNoteOperations
 from ..applescript.folder_utils import FolderPathUtils
 from ..applescript.folder_details import FolderDetailsOperations
+from ..applescript.rename_folder import RenameFolderOperations
+from ..applescript.move_folder import MoveFolderOperations
 from ..applescript.folder_structure import FolderStructureOperations
 
 class NotesTools:
@@ -124,14 +125,6 @@ class NotesTools:
         """Create a new note in a nested folder path."""
         return await CreateNoteOperations.create_note_in_path(name, body, folder_path)
     
-    async def list_notes_by_folder(self, folder_name: str) -> List[Dict[str, Any]]:
-        """List all notes from a specific folder (backward compatibility)."""
-        return await ListNotesByFolderOperations.list_notes_by_folder(folder_name)
-    
-    async def list_notes_by_folder_path(self, folder_path: str) -> List[Dict[str, Any]]:
-        """List all notes from a specific folder path."""
-        return await ListNotesByFolderOperations.list_notes_by_folder_path(folder_path)
-    
     async def create_folder(self, folder_name: str, folder_path: str = "") -> Dict[str, Any]:
         """Create a folder in Apple Notes.
         
@@ -150,16 +143,24 @@ class NotesTools:
         """Read all notes with the given name in the specified folder path."""
         return await ReadNoteOperations.read_note_by_name_in_path(note_name, folder_path)
     
-
-    
     async def get_folder_details(self, folder_name: str) -> Dict[str, Any]:
         """Get comprehensive details about a folder including all subfolders and notes in hierarchy."""
         return await FolderDetailsOperations.get_folder_details(folder_name)
     
-    async def get_folder_hierarchy_details(self, folder_name: str) -> Dict[str, Any]:
-        """Get folder details with a more robust hierarchical structure."""
-        return await FolderDetailsOperations.get_folder_hierarchy_details(folder_name)
-
+    async def rename_folder(self, folder_path: str, current_name: str, new_name: str) -> Dict[str, Any]:
+        """Rename a folder in Apple Notes."""
+        return await RenameFolderOperations.rename_folder(folder_path, current_name, new_name)
+    
+    async def move_folder(self, source_path: str, folder_name: str, target_path: str = "") -> Dict[str, Any]:
+        """Move a folder from one location to another in Apple Notes.
+        
+        Args:
+            source_path: The current path of the folder to move
+            folder_name: The name of the folder to move
+            target_path: The target path where to move the folder. If empty, moves to root level.
+        """
+        return await MoveFolderOperations.move_folder(source_path, folder_name, target_path)
+    
     async def list_folder_structure(self) -> str:
         """List the complete folder structure with hierarchical tree format."""
         return await FolderStructureOperations.get_filtered_folders_structure()

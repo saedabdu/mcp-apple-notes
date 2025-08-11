@@ -22,22 +22,12 @@ async def list_notes(ctx: Context) -> str:
 
 @mcp.tool()
 async def create_note(ctx: Context, name: str, body: str, folder_name: str = "Notes") -> str:
-    """Create a new Apple Note with specified name, body, and folder."""
+    """Create a new note with specified name and content in a single folder."""
     try:
         note = await notes_tools.create_note(name, body, folder_name)
         return str(note)
     except Exception as e:
         await ctx.error(f"Error creating note: {str(e)}")
-        raise
-
-@mcp.tool()
-async def list_notes_by_folder(ctx: Context, folder_name: str) -> str:
-    """List all notes from a specific folder."""
-    try:
-        notes = await notes_tools.list_notes_by_folder(folder_name)
-        return str(notes)
-    except Exception as e:
-        await ctx.error(f"Error listing notes by folder: {str(e)}")
         raise
 
 @mcp.tool()
@@ -99,16 +89,6 @@ async def create_note_in_path(ctx: Context, name: str, body: str, folder_path: s
         return str(note)
     except Exception as e:
         await ctx.error(f"Error creating note in path: {str(e)}")
-        raise
-
-@mcp.tool()
-async def list_notes_by_folder_path(ctx: Context, folder_path: str) -> str:
-    """List all notes from a specific folder path."""
-    try:
-        notes = await notes_tools.list_notes_by_folder_path(folder_path)
-        return str(notes)
-    except Exception as e:
-        await ctx.error(f"Error listing notes by folder path: {str(e)}")
         raise
 
 @mcp.tool()
@@ -179,41 +159,41 @@ async def get_folder_details(ctx: Context, folder_name: str) -> str:
         raise
 
 @mcp.tool()
-async def get_folder_hierarchy_details(ctx: Context, folder_name: str) -> str:
-    """Get folder details with a more robust hierarchical structure."""
+async def rename_folder(ctx: Context, folder_path: str, current_name: str, new_name: str) -> str:
+    """Rename a folder in Apple Notes."""
     try:
-        folder_details = await notes_tools.get_folder_hierarchy_details(folder_name)
+        rename_result = await notes_tools.rename_folder(folder_path, current_name, new_name)
         
-        # Format the response in a readable way
-        result = f"📁 Folder Hierarchy Details: {folder_name}\n"
-        result += f"📂 Path: {folder_details.get('path', 'N/A')}\n"
-        result += f"📝 Notes Count: {folder_details.get('notes_count', 0)}\n"
-        result += f"📁 Subfolders Count: {folder_details.get('subfolders_count', 0)}\n\n"
-        
-        # Add notes information
-        notes = folder_details.get('notes', [])
-        if notes:
-            result += "📝 Notes:\n"
-            for i, note in enumerate(notes, 1):
-                result += f"  {i}. {note.get('name', 'N/A')}\n"
-                result += f"     Created: {note.get('creation_date', 'N/A')}\n"
-                result += f"     Modified: {note.get('modification_date', 'N/A')}\n\n"
-        else:
-            result += "📝 Notes: None\n\n"
-        
-        # Add subfolders information
-        subfolders = folder_details.get('subfolders', [])
-        if subfolders:
-            result += "📁 Subfolders:\n"
-            for i, subfolder in enumerate(subfolders, 1):
-                result += f"  {i}. {subfolder.get('name', 'N/A')} (Path: {subfolder.get('path', 'N/A')})\n"
-                result += f"     Notes: {subfolder.get('notes_count', 0)}, Subfolders: {subfolder.get('subfolders_count', 0)}\n\n"
-        else:
-            result += "📁 Subfolders: None\n\n"
+        # Format the response
+        result = f"🔄 Folder Rename Result:\n"
+        result += f"📂 Path: {rename_result.get('folder_path', 'N/A')}\n"
+        result += f"📝 Old Name: {rename_result.get('current_name', 'N/A')}\n"
+        result += f"📝 New Name: {rename_result.get('new_name', 'N/A')}\n"
+        result += f"✅ Status: {rename_result.get('status', 'N/A')}\n"
+        result += f"💬 Message: {rename_result.get('message', 'N/A')}\n"
         
         return result
     except Exception as e:
-        await ctx.error(f"Error getting folder hierarchy details: {str(e)}")
+        await ctx.error(f"Error renaming folder: {str(e)}")
+        raise
+
+@mcp.tool()
+async def move_folder(ctx: Context, source_path: str, folder_name: str, target_path: str = "") -> str:
+    """Move a folder from one location to another in Apple Notes."""
+    try:
+        move_result = await notes_tools.move_folder(source_path, folder_name, target_path)
+        
+        # Format the response
+        result = f"📦 Folder Move Result:\n"
+        result += f"📁 Folder Name: {move_result.get('folder_name', 'N/A')}\n"
+        result += f"📂 Source Path: {move_result.get('source_path', 'N/A')}\n"
+        result += f"📂 Target Path: {move_result.get('target_path', 'N/A')}\n"
+        result += f"✅ Status: {move_result.get('status', 'N/A')}\n"
+        result += f"💬 Message: {move_result.get('message', 'N/A')}\n"
+        
+        return result
+    except Exception as e:
+        await ctx.error(f"Error moving folder: {str(e)}")
         raise
 
 @mcp.tool()
