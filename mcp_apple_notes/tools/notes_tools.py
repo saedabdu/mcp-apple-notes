@@ -143,13 +143,24 @@ class NotesTools:
         # Use the enhanced CreateFolderOperations that handles all logic internally
         return await CreateFolderOperations.create_folder(folder_name, folder_path)
     
-    async def read_note_by_name(self, note_name: str, folder_name: str) -> List[Dict[str, str]]:
-        """Read all notes with the given name in the specified folder (backward compatibility)."""
-        return await ReadNoteOperations.read_note_by_name(note_name, folder_name)
-    
-    async def read_note_by_name_in_path(self, note_name: str, folder_path: str) -> List[Dict[str, str]]:
-        """Read all notes with the given name in the specified folder path."""
-        return await ReadNoteOperations.read_note_by_name_in_path(note_name, folder_path)
+    async def read_note(self, note_name: str, folder_path: str = "Notes") -> List[Dict[str, str]]:
+        """Read notes with the given name in the specified folder path.
+        
+        This unified method handles both simple folders and nested paths.
+        Returns all notes with the specified name if multiple exist.
+        
+        Args:
+            note_name: Name of the note to read
+            folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). Defaults to "Notes".
+            
+        Returns:
+            List of notes with the specified name
+            
+        Raises:
+            ValueError: If note name is empty or invalid
+            RuntimeError: If folder path doesn't exist or note not found
+        """
+        return await ReadNoteOperations.read_note(note_name, folder_path)
     
     async def get_folder_details(self, folder_name: str) -> Dict[str, Any]:
         """Get comprehensive details about a folder including all subfolders and notes in hierarchy."""

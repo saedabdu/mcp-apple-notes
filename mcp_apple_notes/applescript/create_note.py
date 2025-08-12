@@ -18,13 +18,26 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         if not text:
             return ""
         
-        # Escape backslashes first (to avoid double-escaping)
-        text = text.replace("\\", "\\\\")
-        
-        # Escape double quotes
-        text = text.replace('"', '\\"')
-        
+        # Use AppleScript's quoted form for better handling of special characters
+        # This is more reliable than manual escaping
         return text
+    
+    @staticmethod
+    def _create_applescript_quoted_string(text: str) -> str:
+        """Create AppleScript quoted string that handles special characters properly.
+        
+        Args:
+            text: The text to quote
+            
+        Returns:
+            AppleScript quoted string
+        """
+        if not text:
+            return '""'
+        
+        # Escape the text for AppleScript string literals
+        escaped_text = text.replace('\\', '\\\\').replace('"', '\\"')
+        return f'"{escaped_text}"'
     
     @staticmethod
     def _validate_note_name(name: str) -> str:
@@ -35,13 +48,47 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         # Clean the name
         name = name.strip()
         
-        # Check for invalid characters (basic validation)
+        # Handle backtick-escaped names
+        if name.startswith('`') and name.endswith('`'):
+            # Extract the name from backticks and skip validation
+            escaped_name = name[1:-1]  # Remove backticks
+            if not escaped_name:
+                raise ValueError("Note name cannot be empty when using backtick escaping")
+            
+            # Check for Apple Notes title length limit (250 characters)
+            if len(escaped_name) > 250:
+                raise ValueError(f"Note name exceeds Apple Notes limit of 250 characters (current: {len(escaped_name)} characters)")
+            
+            # Return the escaped name without backticks
+            return escaped_name.strip()
+        
+        # Check for Apple Notes title length limit (250 characters)
+        if len(name) > 250:
+            raise ValueError(f"Note name exceeds Apple Notes limit of 250 characters (current: {len(name)} characters)")
+        
+        # Check for invalid characters (basic validation) - only for non-escaped names
         invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
         for char in invalid_chars:
             if char in name:
-                raise ValueError(f"Note name contains invalid character '{char}'")
+                raise ValueError(f"Note name contains invalid character '{char}'. Use backticks (`name`) to escape special characters.")
         
         return name
+    
+    @staticmethod
+    def _truncate_note_name(name: str, max_length: int = 250) -> str:
+        """Intelligently truncate note name to fit Apple Notes limit."""
+        if len(name) <= max_length:
+            return name
+        
+        # Try to truncate at word boundaries
+        truncated = name[:max_length-3]  # Leave room for "..."
+        
+        # Find the last space to avoid cutting words
+        last_space = truncated.rfind(' ')
+        if last_space > max_length * 0.7:  # If we can find a space in the last 30%
+            truncated = truncated[:last_space]
+        
+        return truncated + "..."
     
     @staticmethod
     def _validate_note_body(body: str) -> str:
@@ -64,9 +111,21 @@ class CreateNoteOperations(BaseAppleScriptOperations):
                         Must exist before creating note. Defaults to "Notes".
         """
         # Validate and clean inputs
-        name = CreateNoteOperations._validate_note_name(name)
+        try:
+            validated_name = CreateNoteOperations._validate_note_name(name)
+        except ValueError as e:
+            # If name is too long, truncate it intelligently
+            if "exceeds Apple Notes limit" in str(e):
+                validated_name = CreateNoteOperations._truncate_note_name(name)
+                validated_name = CreateNoteOperations._validate_note_name(validated_name)  # Validate the truncated name
+            else:
+                raise e
+        
         body = CreateNoteOperations._validate_note_body(body)
         folder_path = folder_path.strip()
+        
+        # Use the validated name (which has backticks removed if present)
+        name = validated_name
         
         # Escape problematic characters for AppleScript
         name = CreateNoteOperations._escape_applescript_string(name)
@@ -83,11 +142,15 @@ class CreateNoteOperations(BaseAppleScriptOperations):
     @staticmethod
     async def _create_note_in_simple_folder(name: str, body: str, folder_name: str) -> Dict[str, str]:
         """Create a new note in a simple folder (no nested paths)."""
+        # Use AppleScript's quoted form for better special character handling
+        quoted_name = CreateNoteOperations._create_applescript_quoted_string(name)
+        quoted_body = CreateNoteOperations._create_applescript_quoted_string(body)
+        
         script = f'''
         tell application "Notes"
             try
                 set targetFolder to folder "{folder_name}"
-                set newNote to make new note at targetFolder with properties {{name:"{name}", body:"{body}"}}
+                set newNote to make new note at targetFolder with properties {{name:{quoted_name}, body:{quoted_body}}}
                 return {{name:(name of newNote), folder:"{folder_name}", creation_date:(creation date of newNote as string), modification_date:(modification date of newNote as string)}}
             on error errMsg
                 return "error:" & errMsg
@@ -114,6 +177,10 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         path_components = FolderPathUtils.parse_folder_path(folder_path)
         
         # Create the note in the existing folder
+        # Use AppleScript's quoted form for better special character handling
+        quoted_name = CreateNoteOperations._create_applescript_quoted_string(name)
+        quoted_body = CreateNoteOperations._create_applescript_quoted_string(body)
+        
         script = f'''
         tell application "Notes"
             try
@@ -146,7 +213,7 @@ class CreateNoteOperations(BaseAppleScriptOperations):
                     return "error:Target folder not found"
                 end if
                 
-                set newNote to make new note at currentFolder with properties {{name:"{name}", body:"{body}"}}
+                set newNote to make new note at currentFolder with properties {{name:{quoted_name}, body:{quoted_body}}}
                 return {{name:(name of newNote), folder:"{folder_path}", creation_date:(creation date of newNote as string), modification_date:(modification date of newNote as string)}}
             on error errMsg
                 return "error:" & errMsg

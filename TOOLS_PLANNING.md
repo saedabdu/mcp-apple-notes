@@ -2,18 +2,18 @@
 
 ## **📋 Complete Tools Summary**
 
-### **✅ Currently Available Tools (10 total)**
+### **✅ Currently Available Tools (9 total)**
 
-#### **Core Note Management (4 tools)**
+#### **Core Note Management (3 tools)**
 1. ✅ `create_note` - Create note with unified folder support
    - **Description**: Creates a new note with specified name and content. Handles both simple folders and nested paths automatically.
    - **Parameters**: `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes")
    - **Features**: Auto-creates parent folders for nested paths, supports both simple and complex folder structures
-2. ✅ `read_note_by_name` - Read notes by name in folder
-   - **Description**: Retrieves all notes with a specific name from a single folder, including full content
-3. ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
-   - **Description**: Retrieves all notes with a specific name from a nested folder path, including full content
-4. ✅ `list_notes_with_structure` - List complete folder structure with notes included
+2. ✅ `read_note` - Read notes by name and path (unified)
+   - **Description**: Retrieves all notes with a specific name from a folder path. Handles both simple folders and nested paths automatically.
+   - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes")
+   - **Features**: Returns all notes with same name if multiple exist, validates path existence, comprehensive error handling
+3. ✅ `list_notes_with_structure` - List complete folder structure with notes included
    - **Description**: Returns the complete folder structure with notes included in hierarchical tree format
 
 #### **Folder Operations (6 tools)**
@@ -60,13 +60,6 @@
 - 🔄 `delete_attachment` - Remove attachments
   - **Description**: Removes specific attachments from notes while preserving the note content
 
-#### **Batch Operations (3 tools)**
-- 🔄 `bulk_move_notes` - Mass organization
-  - **Description**: Moves multiple notes between folders in batch operations
-- 🔄 `bulk_delete_notes` - Cleanup operations
-  - **Description**: Deletes multiple notes with confirmation and safety checks
-- 🔄 `export_notes` - Backup/export functionality
-  - **Description**: Exports notes in various formats (txt, html, etc.) for backup
 
 #### **Utility Tools (2 tools)**
 - 🔄 `get_app_info` - Notes app version/status
@@ -88,6 +81,13 @@
   - **Improvement**: Single tool for all note creation scenarios
   - **Features**: Auto-creates parent folders, supports both simple folders and nested paths
   - **Backward Compatibility**: Maintains existing functionality
+- **✅ UNIFIED**: `read_note` tool now handles both simple and nested paths
+  - **Improvement**: Single tool for all note reading scenarios
+  - **Features**: Validates path existence, returns all notes with same name, enhanced error handling
+  - **Replaces**: `read_note_by_name` and `read_note_by_name_in_path` tools
+- **❌ REMOVED**: `read_note_by_name` and `read_note_by_name_in_path` tools
+  - **Reason**: Functionality now available in unified `read_note` tool
+  - **Result**: Cleaner, more maintainable codebase with better user experience
 - **❌ REMOVED**: `create_note_in_path` tool (completely removed)
   - **Reason**: Functionality now available in unified `create_note` tool
   - **Result**: Cleaner, more maintainable codebase
@@ -112,8 +112,7 @@
 
 ### **Core Note Management**
 - ✅ `create_note` - Create note with unified folder support (simple and nested paths)
-- ✅ `read_note_by_name` - Read notes by name in folder
-- ✅ `read_note_by_name_in_path` - Read notes by name in nested folder path
+- ✅ `read_note` - Read notes by name and path (unified - simple and nested paths)
 - ✅ `list_notes_with_structure` - Get complete folder structure with notes included
 - 🔄 `update_note` - Modify note body/name
 - 🔄 `delete_note` - Remove notes
@@ -173,9 +172,12 @@ async def create_note(ctx: Context, name: str, body: str, folder_path: str = "No
   - Handles both simple folders and nested paths
   - Validates that folder path exists before creating note
   - Throws error if folder path doesn't exist
-  - Automatically escapes quotes and backslashes for AppleScript compatibility
+  - **Enhanced AppleScript handling**: Robust special character support with proper escaping
   - Smart path detection and validation
   - Comprehensive error handling
+  - **Intelligent name truncation**: Automatically truncates names >250 characters with "..." suffix
+  - **Apple Notes compliance**: Respects 250-character title limit
+  - **Backtick escaping**: Use backticks (`name`) to escape special characters
 - **Error Handling**: Throws RuntimeError if folder path doesn't exist
 - **Examples**:
   ```python
@@ -187,28 +189,61 @@ async def create_note(ctx: Context, name: str, body: str, folder_path: str = "No
   
   # Special characters (automatically escaped)
   await create_note("Code Note", 'Path: "C:\\Users\\Name\\file.txt"', "Work")
+  
+  # Long names (automatically truncated)
+  await create_note("Very long note name that exceeds limits...", "Content", "Work")
+  
+  # Special characters with backtick escaping
+  await create_note("`Test Note < Invalid`", "Content", "Work")
+  await create_note("`Test \Backslash Title`", "Content", "Work")
+  await create_note("`Complex Test: "Quotes" & <Symbols> & \Backslashes`", "Content", "Work")
   ```
 
-##### `read_note_by_name`
+##### `read_note` (UNIFIED)
 ```python
-async def read_note_by_name(ctx: Context, note_name: str, folder_name: str) -> str:
-    """Read all notes with the given name in the specified folder."""
+async def read_note(ctx: Context, note_name: str, folder_path: str = "Notes") -> str:
+    """Read notes with the given name in the specified folder path.
+    
+    This unified tool handles both simple folders and nested paths.
+    Returns all notes with the specified name if multiple exist.
+    """
 ```
-- **Status**: ✅ Implemented
-- **Parameters**: `note_name` (required), `folder_name` (required)
-- **Returns**: All matching notes with full content
-- **Features**: Returns multiple matches if same name exists
-- **Error Handling**: Clear messaging for no matches
-
-##### `read_note_by_name_in_path`
-```python
-async def read_note_by_name_in_path(ctx: Context, note_name: str, folder_path: str) -> str:
-    """Read all notes with the given name in the specified folder path."""
-```
-- **Status**: ✅ Implemented
-- **Parameters**: `note_name` (required), `folder_path` (required)
-- **Returns**: All matching notes with full content
-- **Features**: Works with nested folder paths
+- **Status**: ✅ Implemented (Unified)
+- **Parameters**: `note_name` (required), `folder_path` (optional, default: "Notes")
+- **Returns**: All matching notes with full content and metadata
+- **Features**: 
+  - Handles both simple folders and nested paths
+  - Returns all notes with same name if multiple exist
+  - Validates path existence before reading
+  - Comprehensive error handling with clear messages
+  - Enhanced output formatting with emojis
+  - **Intelligent name handling**: Automatically handles truncated names with "..." suffix
+  - **Apple Notes compliance**: Respects 250-character title limit
+  - **Backtick escaping**: Use backticks (`name`) to escape special characters
+  - **Enhanced AppleScript handling**: Robust special character support with proper escaping
+- **Error Handling**: 
+  - Throws ValueError for invalid note names
+  - Throws RuntimeError for non-existent paths or notes
+  - Clear error messages with context
+- **Examples**:
+  ```python
+  # Simple folder
+  await read_note("Meeting Notes", "Work")
+  
+  # Nested path
+  await read_note("Sprint Planning", "Work/Projects/2024/Q1")
+  
+  # Default folder
+  await read_note("Quick Note")
+  
+  # Truncated names
+  await read_note("Very long note name that exceeds limits...", "Work")
+  
+  # Special characters with backtick escaping
+  await read_note("`Test Note < Invalid`", "Work")
+  await read_note("`Test \Backslash Title`", "Work")
+  await read_note("`Complex Test: "Quotes" & <Symbols> & \Backslashes`", "Work")
+  ```
 
 ##### `list_notes_with_structure`
 ```python
@@ -467,8 +502,8 @@ await create_note("Project Ideas", "New project concepts", "Work")
 # Create note in nested folder (auto-creates parent folders)
 await create_note("Sprint Planning", "Sprint planning content", "Work/Projects/2024/Q1")
 
-# Read note by name
-await read_note_by_name("Meeting Notes", "Work")
+# Read note by name and path
+await read_note("Meeting Notes", "Work")
 ```
 
 ### **Nested Folder Operations**
@@ -483,7 +518,7 @@ await create_folder("Q1", "Work/Projects/2024")
 await create_note("Sprint Planning", "Sprint planning content", "Work/Projects/2024/Q1")
 
 # Read note from nested folder
-await read_note_by_name_in_path("Sprint Planning", "Work/Projects/2024/Q1")
+await read_note("Sprint Planning", "Work/Projects/2024/Q1")
 ```
 
 ### **Folder Management**

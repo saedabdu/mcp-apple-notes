@@ -12,12 +12,12 @@ tell application "Notes"
     try
         set targetFolder to missing value
         
-        -- Handle root level folder rename
-        if "{folder_path}" is "{current_name}" then
+        -- Handle root level folder rename (when folder_path is empty or same as current_name)
+        if "{folder_path}" is "" or "{folder_path}" is "{current_name}" then
             repeat with rootFolder in folders
                 if name of rootFolder is "{current_name}" then
                     set name of rootFolder to "{new_name}"
-                    return {{"success", "{current_name}", "{new_name}", "{folder_path}"}}
+                    return {{"success", "{current_name}", "{new_name}", "root"}}
                 end if
             end repeat
             return "error:Root folder '{current_name}' not found"
@@ -27,8 +27,8 @@ tell application "Notes"
         set pathParts to my splitString("{folder_path}", "/")
         set currentFolder to missing value
         
-        -- Navigate to parent folder
-        repeat with i from 1 to (count of pathParts) - 1
+        -- Navigate to the parent folder (the folder_path is the parent)
+        repeat with i from 1 to count of pathParts
             set partName to item i of pathParts
             
             if currentFolder is missing value then
@@ -42,7 +42,7 @@ tell application "Notes"
                     end if
                 end repeat
                 if not found then
-                    return "error:Parent folder path not found: {folder_path}"
+                    return "error:Parent folder path not found: " & partName
                 end if
             else
                 -- Check subfolders
@@ -55,7 +55,7 @@ tell application "Notes"
                     end if
                 end repeat
                 if not found then
-                    return "error:Parent folder path not found: {folder_path}"
+                    return "error:Parent folder path not found: " & partName
                 end if
             end if
         end repeat
@@ -68,7 +68,7 @@ tell application "Notes"
                     return {{"success", "{current_name}", "{new_name}", "{folder_path}"}}
                 end if
             end repeat
-            return "error:Target folder '{current_name}' not found in path"
+            return "error:Target folder '{current_name}' not found in path '{folder_path}'"
         else
             return "error:Could not navigate to parent folder"
         end if

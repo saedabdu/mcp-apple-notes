@@ -64,51 +64,50 @@ async def create_folder(ctx: Context, folder_name: str, folder_path: str = "") -
         raise
 
 @mcp.tool()
-async def read_note_by_name(ctx: Context, note_name: str, folder_name: str) -> str:
-    """Read all notes with the given name in the specified folder."""
+async def read_note(ctx: Context, note_name: str, folder_path: str = "Notes") -> str:
+    """Read notes with the given name in the specified folder path.
+    
+    This unified tool handles both simple folders and nested paths.
+    Returns all notes with the specified name if multiple exist.
+    
+    Args:
+        note_name: Name of the note to read
+        folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). Defaults to "Notes".
+    """
     try:
-        notes = await notes_tools.read_note_by_name(note_name, folder_name)
-        
-        if not notes:
-            return f"No notes found with name '{note_name}' in folder '{folder_name}'"
-        
-        if len(notes) == 1:
-            return f"Found 1 note:\n{str(notes[0])}"
-        else:
-            result = f"Found {len(notes)} notes with name '{note_name}' in folder '{folder_name}':\n"
-            for i, note in enumerate(notes, 1):
-                result += f"\n--- Note {i} ---\n"
-                result += f"Creation Date: {note['creation_date']}\n"
-                result += f"Modification Date: {note['modification_date']}\n"
-                result += f"Content:\n{note['body']}\n"
-            return result
-            
-    except Exception as e:
-        await ctx.error(f"Error reading note: {str(e)}")
-        raise
-
-@mcp.tool()
-async def read_note_by_name_in_path(ctx: Context, note_name: str, folder_path: str) -> str:
-    """Read all notes with the given name in the specified folder path."""
-    try:
-        notes = await notes_tools.read_note_by_name_in_path(note_name, folder_path)
+        notes = await notes_tools.read_note(note_name, folder_path)
         
         if not notes:
             return f"No notes found with name '{note_name}' in folder path '{folder_path}'"
         
         if len(notes) == 1:
-            return f"Found 1 note:\n{str(notes[0])}"
+            note = notes[0]
+            result = f"📝 Found 1 note:\n"
+            result += f"📂 Folder: {note['folder']}\n"
+            result += f"📅 Creation Date: {note['creation_date']}\n"
+            result += f"📅 Modification Date: {note['modification_date']}\n"
+            result += f"📄 Content:\n{note['body']}\n"
+            return result
         else:
-            result = f"Found {len(notes)} notes with name '{note_name}' in folder path '{folder_path}':\n"
+            result = f"📝 Found {len(notes)} notes with name '{note_name}' in folder path '{folder_path}':\n"
             for i, note in enumerate(notes, 1):
                 result += f"\n--- Note {i} ---\n"
-                result += f"Creation Date: {note['creation_date']}\n"
-                result += f"Modification Date: {note['modification_date']}\n"
-                result += f"Content:\n{note['body']}\n"
+                result += f"📂 Folder: {note['folder']}\n"
+                result += f"📅 Creation Date: {note['creation_date']}\n"
+                result += f"📅 Modification Date: {note['modification_date']}\n"
+                result += f"📄 Content:\n{note['body']}\n"
             return result
             
+    except ValueError as e:
+        error_msg = f"Invalid input: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
+    except RuntimeError as e:
+        error_msg = f"Note not found or path error: {str(e)}"
+        await ctx.error(error_msg)
+        raise RuntimeError(error_msg)
     except Exception as e:
-        await ctx.error(f"Error reading note by path: {str(e)}")
+        await ctx.error(f"Error reading note: {str(e)}")
         raise
 
 

@@ -99,6 +99,10 @@ await create_note("Sprint Planning", "Content", "Work/Projects/2024/Q1")
 
 # Special characters (automatically escaped)
 await create_note("Code Note", 'Path: "C:\\Users\\Name\\file.txt"', "Work")
+
+# Read note by name and path
+await read_note("Meeting Notes", "Work")
+await read_note("Sprint Planning", "Work/Projects/2024/Q1")
 ```
 
 **Features:**
@@ -115,8 +119,7 @@ await create_note("Code Note", 'Path: "C:\\Users\\Name\\file.txt"', "Work")
 | `list_notes_with_structure` | List complete folder structure with notes included | None |
 | `list_folder_with_structure` | List complete folder structure | None |
 | `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes") |
-| `read_note_by_name` | Read notes by name in folder | `note_name` (string), `folder_name` (string) |
-| `read_note_by_name_in_path` | Read notes by name in nested folder path | `note_name` (string), `folder_path` (string) |
+| `read_note` | Read notes by name and path (unified - handles simple and nested paths) | `note_name` (string), `folder_path` (string, optional, default: "Notes") |
 | `create_folder` | Create folder with optional path | `folder_name` (string), `folder_path` (string, optional) |
 | `get_folder_details` | Get comprehensive folder details | `folder_name` (string) |
 | `rename_folder` | Rename folder with path support | `folder_path` (string), `current_name` (string), `new_name` (string) |
