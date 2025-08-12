@@ -9,6 +9,7 @@
    - **Description**: Creates a new note with specified name and content. Handles both simple folders and nested paths automatically.
    - **Parameters**: `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes")
    - **Features**: Auto-creates parent folders for nested paths, supports both simple and complex folder structures, **duplicate name validation**
+   - **Content Support**: Plain text, HTML formatting, Unicode (emojis/symbols), URLs, checklists, code blocks, special characters
 2. ✅ `read_note` - Read notes by name and path (unified)
    - **Description**: Retrieves all notes with a specific name from a folder path. Handles both simple folders and nested paths automatically.
    - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes")
@@ -17,6 +18,7 @@
    - **Description**: Updates existing note content, name, or both while preserving creation date. Prevents duplicate names in the same folder.
    - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes"), `new_name` (string, optional), `new_body` (string, optional), `note_index` (integer, optional)
    - **Features**: Handles both simple folders and nested paths, **duplicate name validation**, **duplicate detection with clear error messages**, supports note_index for multiple notes with same name
+   - **Content Support**: Plain text, HTML formatting, Unicode (emojis/symbols), URLs, checklists, code blocks, special characters
 4. ✅ `delete_note` - Delete notes with duplicate handling
    - **Description**: Permanently removes notes from folders with comprehensive duplicate handling.
    - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes")
@@ -597,11 +599,95 @@ await update_note("Note Name", "Work", new_body="Updated content")
 # Update both name and content
 await update_note("Old Name", "Work", new_name="New Name", new_body="Updated content")
 
+# Update note with rich content types
+await update_note("Status Report", "Work", new_body="🚀 Project: ✅ Complete\n📱 Mobile: 🔄 In Progress\n\n<h2>Next Steps</h2>\n☐ Code review\n☐ Testing\n☐ Deployment")
+
+# Update note with HTML formatting
+await update_note("Documentation", "Work", new_body="<h1>API Documentation</h1><p><strong>Version:</strong> 2.0</p><ul><li>Feature A</li><li>Feature B</li></ul>")
+
+# Update note with code blocks
+await update_note("Code Examples", "Work", new_body="JavaScript:\nfunction hello() {\n    console.log('Hello, World!');\n}\n\nPython:\ndef hello_world():\n    print('Hello, World!')")
+
+# Update note with URLs and links
+await update_note("Resources", "Work", new_body="Project resources:\nhttps://github.com/project\nhttps://docs.project.com\nContact: mailto:team@project.com")
+
 # Delete note by name
 await delete_note("Meeting Notes", "Work")
 
 # Delete note from nested folder
 await delete_note("Sprint Planning", "Work/Projects/2024/Q1")
+```
+
+### **Advanced Content Types for create_note**
+```python
+# Plain text with Unicode support
+await create_note("Emoji Note", "🚀 Project status: ✅ Complete\n📱 Mobile app: 🔄 In progress\n💻 Web app: ⏳ Pending")
+
+# HTML formatting
+await create_note("Formatted Note", "<h1>Project Overview</h1><p><strong>Status:</strong> <em>Active</em></p><ul><li>Feature A</li><li>Feature B</li></ul>")
+
+# Checklists
+await create_note("Task List", "☐ Review code<br>☐ Write tests<br>☐ Update documentation<br>☑ Deploy to staging")
+
+# URLs and links
+await create_note("Resource Links", "Project resources:\nhttps://github.com/project\nhttps://docs.project.com\nContact: mailto:team@project.com")
+
+# Code blocks
+await create_note("Code Examples", "JavaScript:\nfunction hello() {\n    console.log('Hello, World!');\n}\n\nPython:\ndef hello_world():\n    print('Hello, World!')")
+
+# Mixed content types
+await create_note("Mixed Content", "<h2>Project Status</h2><br><p><strong>Current Phase:</strong> Development 🚀</p><br><br>☐ Code review<br>☐ Testing<br>☐ Documentation<br><br>Visit: <a href='https://project.com'>Project Website</a>")
+
+# Special characters and symbols
+await create_note("Special Characters", "Math symbols: ± × ÷ √ ∞ ≤ ≥ ≠<br>Currency: € £ ¥ ¢<br>Legal: © ® ™<br>Technical: § ¶ † ‡ • – — …")
+```
+
+### **📝 Important: Line Breaks and Formatting**
+
+**Apple Notes does NOT preserve plain text `\n` characters.** For proper formatting, use HTML tags:
+
+#### **Line Breaks**
+```python
+# ❌ Wrong - \n characters are ignored
+await create_note("Test", "Line 1\nLine 2\nLine 3")
+
+# ✅ Correct - Use HTML line breaks
+await create_note("Test", "Line 1<br>Line 2<br>Line 3")
+```
+
+#### **Lists and Checklists**
+```python
+# ✅ Proper checklist formatting
+await create_note("Tasks", "☐ Task 1<br>☐ Task 2<br>☑ Task 3")
+
+# ✅ HTML bullet lists
+await create_note("Features", "<ul><li>Feature A</li><li>Feature B</li><li>Feature C</li></ul>")
+```
+
+#### **Mixed Content with Proper Formatting**
+```python
+await create_note("Project Status", "<h2>Current Status</h2><br><p><strong>Phase:</strong> Development 🚀</p><br><br>☐ Code review<br>☐ Testing<br>☐ Documentation<br><br>Visit: <a href='https://project.com'>Project Website</a>")
+```
+
+### **Advanced Content Types for update_note**
+```python
+# Update with Unicode and emojis
+await update_note("Project Status", "Work", new_body="🚀 Launch: ✅ Complete\n📱 Mobile: 🔄 In Progress\n💻 Web: ⏳ Pending")
+
+# Update with HTML formatting
+await update_note("Meeting Notes", "Work", new_body="<h1>Team Meeting</h1><p><strong>Date:</strong> <em>Today</em></p><ul><li>Agenda item 1</li><li>Agenda item 2</li></ul>")
+
+# Update with checklists
+await update_note("Task List", "Work", new_body="☐ Review pull requests<br>☐ Update documentation<br>☑ Deploy to staging<br>☐ Monitor performance")
+
+# Update with code examples
+await update_note("API Reference", "Work", new_body="GET /api/users\n```\ncurl -X GET https://api.example.com/users\n```\n\nResponse:\n```json\n{\n  \"users\": [\"user1\", \"user2\"]\n}\n```")
+
+# Update with mixed content types
+await update_note("Project Overview", "Work", new_body="<h2>Current Status</h2><br><p><strong>Phase:</strong> Development 🚀</p><br><br>☐ Code review<br>☐ Testing<br>☐ Documentation<br><br>Visit: <a href='https://project.com'>Project Website</a>")
+
+# Update with special characters
+await update_note("Technical Notes", "Work", new_body="Math: ± × ÷ √ ∞ ≤ ≥ ≠\nCurrency: € £ ¥ ¢\nLegal: © ® ™\nTechnical: § ¶ † ‡ • – — …")
 ```
 
 ### **Nested Folder Operations**

@@ -18,9 +18,22 @@ async def create_note(ctx: Context, name: str, body: str, folder_path: str = "No
     This unified tool handles both simple folders and nested paths.
     The folder path must exist before creating the note.
     
+    Supported content types for the body:
+    - Plain text with Unicode support (emojis, symbols)
+    - HTML formatting (headings, bold, italic, lists, links)
+    - Checklists (using checkbox symbols: ☐, ☑, •)
+    - URLs (automatically detected and clickable)
+    - Code blocks (as plain text)
+    - Special characters and symbols
+    
+    Note: For line breaks and lists, use HTML tags:
+    - Line breaks: Use <br> or <div> tags
+    - Lists: Use <ul><li>item</li></ul> for bullet lists
+    - Plain text \n characters are not preserved in Apple Notes
+    
     Args:
         name: Name of the note (cannot be empty or contain only whitespace)
-        body: Content of the note
+        body: Content of the note (supports plain text, HTML, Unicode, URLs)
         folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). 
                     Must exist before creating note. Defaults to "Notes".
     """
@@ -119,11 +132,24 @@ async def update_note(ctx: Context, note_name: str, folder_path: str = "Notes",
     This unified tool handles both simple folders and nested paths.
     At least one of new_name or new_body must be provided.
     
+    Supported content types for new_body:
+    - Plain text with Unicode support (emojis, symbols)
+    - HTML formatting (headings, bold, italic, lists, links)
+    - Checklists (using checkbox symbols: ☐, ☑, •)
+    - URLs (automatically detected and clickable)
+    - Code blocks (as plain text)
+    - Special characters and symbols
+    
+    Note: For line breaks and lists, use HTML tags:
+    - Line breaks: Use <br> or <div> tags
+    - Lists: Use <ul><li>item</li></ul> for bullet lists
+    - Plain text \n characters are not preserved in Apple Notes
+    
     Args:
         note_name: Current name of the note to update
         folder_path: Folder path where the note is located (default: "Notes")
         new_name: New name for the note (optional)
-        new_body: New content for the note (optional)
+        new_body: New content for the note (supports plain text, HTML, Unicode, URLs) (optional)
         note_index: Index of the note to update if multiple notes have the same name (1-based, optional)
     """
     try:

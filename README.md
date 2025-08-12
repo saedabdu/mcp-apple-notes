@@ -111,6 +111,76 @@ await read_note("Sprint Planning", "Work/Projects/2024/Q1")
 - ✅ **Character Escaping**: Automatically handles quotes and backslashes
 - ✅ **Backward Compatible**: Works with existing simple folder usage
 - ✅ **Error Handling**: Comprehensive validation and error messages
+- ✅ **Rich Content Support**: Plain text, HTML, Unicode, URLs, checklists, code blocks
+
+### **📝 Supported Content Types**
+
+The `create_note` tool supports various content types in the note body:
+
+#### **Plain Text & Unicode**
+```python
+await create_note("Status", "🚀 Project: ✅ Complete\n📱 Mobile: 🔄 In Progress")
+```
+
+#### **HTML Formatting**
+```python
+await create_note("Formatted", "<h1>Title</h1><p><strong>Bold</strong> and <em>italic</em></p>")
+```
+
+#### **Checklists**
+```python
+await create_note("Tasks", "☐ Review code<br>☐ Write tests<br>☑ Deploy")
+```
+
+#### **URLs & Links**
+```python
+await create_note("Links", "Visit: https://github.com/project\nContact: mailto:team@project.com")
+```
+
+#### **Code Blocks**
+```python
+await create_note("Code", "function hello() {<br>    console.log('Hello, World!');<br>}")
+```
+
+### **📝 Updating Notes with Rich Content**
+
+The `update_note` tool supports the same content types as `create_note`:
+
+#### **Update with Unicode & Emojis**
+```python
+await update_note("Status", "Work", new_body="🚀 Project: ✅ Complete\n📱 Mobile: 🔄 In Progress")
+```
+
+#### **Update with HTML Formatting**
+```python
+await update_note("Documentation", "Work", new_body="<h1>Updated Title</h1><p><strong>New content</strong> with <em>formatting</em></p>")
+```
+
+#### **Update with Checklists**
+```python
+await update_note("Tasks", "Work", new_body="☐ New task 1<br>☐ New task 2<br>☑ Completed task")
+```
+
+#### **Update with Code & URLs**
+```python
+await update_note("API Docs", "Work", new_body="Updated API:<br>function newAPI() {<br>    return 'updated';<br>}<br><br>Visit: https://docs.updated.com")
+```
+
+### **⚠️ Important: Line Breaks and Formatting**
+
+**Apple Notes does NOT preserve plain text `\n` characters.** For proper formatting:
+
+- **Use `<br>` for line breaks** instead of `\n`
+- **Use `<ul><li>item</li></ul>` for bullet lists**
+- **Use `<div>` tags for paragraph separation**
+
+```python
+# ❌ Wrong - \n characters are ignored
+await create_note("Test", "Line 1\nLine 2\nLine 3")
+
+# ✅ Correct - Use HTML line breaks
+await create_note("Test", "Line 1<br>Line 2<br>Line 3")
+```
 
 ### **Tool Reference**
 
@@ -118,9 +188,9 @@ await read_note("Sprint Planning", "Work/Projects/2024/Q1")
 |------|-------------|------------|
 | `list_notes_with_structure` | List complete folder structure with notes included | None |
 | `list_folder_with_structure` | List complete folder structure | None |
-| `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes") |
+| `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string, supports HTML/Unicode/URLs), `folder_path` (string, optional, default: "Notes") |
 | `read_note` | Read notes by name and path (unified - handles simple and nested paths) | `note_name` (string), `folder_path` (string, optional, default: "Notes") |
-| `update_note` | Update note content and metadata with duplicate validation | `note_name` (string), `folder_path` (string, optional, default: "Notes"), `new_name` (string, optional), `new_body` (string, optional), `note_index` (integer, optional) |
+| `update_note` | Update note content and metadata with duplicate validation | `note_name` (string), `folder_path` (string, optional, default: "Notes"), `new_name` (string, optional), `new_body` (string, supports HTML/Unicode/URLs, optional), `note_index` (integer, optional) |
 | `delete_note` | Delete notes with duplicate handling | `note_name` (string), `folder_path` (string, optional, default: "Notes") |
 | `create_folder` | Create folder with optional path | `folder_name` (string), `folder_path` (string, optional) |
 | `get_folder_details` | Get comprehensive folder details | `folder_name` (string) |
