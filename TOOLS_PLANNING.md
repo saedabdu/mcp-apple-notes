@@ -2,18 +2,22 @@
 
 ## **📋 Complete Tools Summary**
 
-### **✅ Currently Available Tools (9 total)**
+### **✅ Currently Available Tools (10 total)**
 
-#### **Core Note Management (3 tools)**
+#### **Core Note Management (4 tools)**
 1. ✅ `create_note` - Create note with unified folder support
    - **Description**: Creates a new note with specified name and content. Handles both simple folders and nested paths automatically.
    - **Parameters**: `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes")
-   - **Features**: Auto-creates parent folders for nested paths, supports both simple and complex folder structures
+   - **Features**: Auto-creates parent folders for nested paths, supports both simple and complex folder structures, **duplicate name validation**
 2. ✅ `read_note` - Read notes by name and path (unified)
    - **Description**: Retrieves all notes with a specific name from a folder path. Handles both simple folders and nested paths automatically.
    - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes")
    - **Features**: Returns all notes with same name if multiple exist, validates path existence, comprehensive error handling
-3. ✅ `list_notes_with_structure` - List complete folder structure with notes included
+3. ✅ `update_note` - Update note content and metadata with duplicate validation
+   - **Description**: Updates existing note content, name, or both while preserving creation date. Prevents duplicate names in the same folder.
+   - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes"), `new_name` (string, optional), `new_body` (string, optional), `note_index` (integer, optional)
+   - **Features**: Handles both simple folders and nested paths, **duplicate name validation**, **duplicate detection with clear error messages**, supports note_index for multiple notes with same name
+4. ✅ `list_notes_with_structure` - List complete folder structure with notes included
    - **Description**: Returns the complete folder structure with notes included in hierarchical tree format
 
 #### **Folder Operations (6 tools)**
@@ -28,11 +32,9 @@
 9. ✅ `move_folder` - Move folder between locations
    - **Description**: Moves a folder from one location to another, supporting root level and nested paths
 
-### **🔄 Planned Tools (17 total)**
+### **🔄 Planned Tools (16 total)**
 
-#### **Core Note Management (2 tools)**
-- 🔄 `update_note` - Modify note content and metadata
-  - **Description**: Updates existing note content, name, or both while preserving creation date
+#### **Core Note Management (1 tool)**
 - 🔄 `delete_note` - Remove notes with confirmation
   - **Description**: Permanently removes notes from folders with optional confirmation prompts
 
@@ -68,15 +70,29 @@
   - **Description**: Brings Apple Notes application to the foreground
 
 ### **📊 Implementation Progress**
-- **✅ Completed**: 10 tools (37%)
-- **🔄 Planned**: 17 tools (63%)
-- **📈 Total**: 27 tools
+- **✅ Completed**: 10 tools (38%)
+- **🔄 Planned**: 16 tools (62%)
+- **📈 Total**: 26 tools
 
 ---
 
 ## **Current Implementation Status**
 
 ### **🔄 Recent Changes**
+- **✅ COMPLETED**: `update_note` tool with comprehensive duplicate validation
+  - **Improvement**: Full CRUD operations now available with robust duplicate detection
+  - **Features**: 
+    - Handles both simple folders and nested paths
+    - **Duplicate name validation** when updating note names
+    - **Duplicate detection** with clear error messages for existing duplicates
+    - **Note index support** for handling multiple notes with same name
+    - **Smart validation** that excludes current note from duplicate check
+  - **Error Handling**: Clear, actionable error messages for all scenarios
+  - **Apple Notes Compliance**: Respects Apple Notes behavior (body updates affect name)
+- **✅ ENHANCED**: `create_note` tool with duplicate validation
+  - **Improvement**: Prevents accidental duplicate creation in same folder
+  - **Features**: Validates note names before creation, clear error messages
+  - **Cross-folder Support**: Same name can exist in different folders
 - **✅ UNIFIED**: `create_note` tool now handles both simple and nested paths
   - **Improvement**: Single tool for all note creation scenarios
   - **Features**: Auto-creates parent folders, supports both simple folders and nested paths
@@ -113,8 +129,8 @@
 ### **Core Note Management**
 - ✅ `create_note` - Create note with unified folder support (simple and nested paths)
 - ✅ `read_note` - Read notes by name and path (unified - simple and nested paths)
+- ✅ `update_note` - Update note content and metadata with duplicate validation
 - ✅ `list_notes_with_structure` - Get complete folder structure with notes included
-- 🔄 `update_note` - Modify note body/name
 - 🔄 `delete_note` - Remove notes
 
 ### **Folder Operations**
@@ -178,7 +194,8 @@ async def create_note(ctx: Context, name: str, body: str, folder_path: str = "No
   - **Intelligent name truncation**: Automatically truncates names >250 characters with "..." suffix
   - **Apple Notes compliance**: Respects 250-character title limit
   - **Backtick escaping**: Use backticks (`name`) to escape special characters
-- **Error Handling**: Throws RuntimeError if folder path doesn't exist
+  - **Duplicate name validation**: Prevents creating notes with duplicate names in same folder
+- **Error Handling**: Throws RuntimeError if folder path doesn't exist, ValueError if duplicate name exists
 - **Examples**:
   ```python
   # Simple folder (must exist)
@@ -197,6 +214,9 @@ async def create_note(ctx: Context, name: str, body: str, folder_path: str = "No
   await create_note("`Test Note < Invalid`", "Content", "Work")
   await create_note("`Test \Backslash Title`", "Content", "Work")
   await create_note("`Complex Test: "Quotes" & <Symbols> & \Backslashes`", "Content", "Work")
+  
+  # Duplicate validation (will fail if note with same name exists)
+  await create_note("Meeting Notes", "Content", "Work")  # Error if already exists
   ```
 
 ##### `read_note` (UNIFIED)
@@ -243,6 +263,59 @@ async def read_note(ctx: Context, note_name: str, folder_path: str = "Notes") ->
   await read_note("`Test Note < Invalid`", "Work")
   await read_note("`Test \Backslash Title`", "Work")
   await read_note("`Complex Test: "Quotes" & <Symbols> & \Backslashes`", "Work")
+  ```
+
+##### `update_note` (UNIFIED)
+```python
+async def update_note(ctx: Context, note_name: str, folder_path: str = "Notes", 
+                     new_name: Optional[str] = None, new_body: Optional[str] = None,
+                     note_index: Optional[int] = None) -> str:
+    """Update an existing note's name and/or content.
+    
+    This unified tool handles both simple folders and nested paths.
+    At least one of new_name or new_body must be provided.
+    """
+```
+- **Status**: ✅ Implemented (Unified)
+- **Parameters**: 
+  - `note_name` (required) - Current name of the note to update
+  - `folder_path` (optional, default: "Notes") - Folder path where the note is located
+  - `new_name` (optional) - New name for the note
+  - `new_body` (optional) - New content for the note
+  - `note_index` (optional) - Index of the note if multiple notes have the same name (1-based)
+- **Returns**: Updated note metadata (name, folder, status, note_id)
+- **Features**: 
+  - Handles both simple folders and nested paths
+  - **Duplicate name validation** when updating note names
+  - **Duplicate detection** with clear error messages for existing duplicates
+  - **Note index support** for handling multiple notes with same name
+  - **Smart validation** that excludes current note from duplicate check
+  - **Apple Notes Compliance**: Respects Apple Notes behavior (body updates affect name)
+  - Enhanced AppleScript handling with proper escaping
+  - Comprehensive error handling with clear messages
+- **Error Handling**: 
+  - Throws ValueError for invalid inputs or duplicate names
+  - Throws RuntimeError for non-existent notes or paths
+  - Clear error messages with actionable suggestions
+- **Examples**:
+  ```python
+  # Update note name only
+  await update_note("Old Name", "Work", new_name="New Name")
+  
+  # Update note body only
+  await update_note("Note Name", "Work", new_body="Updated content")
+  
+  # Update both name and body
+  await update_note("Old Name", "Work", new_name="New Name", new_body="Updated content")
+  
+  # Update specific duplicate note (index 2)
+  await update_note("Duplicate Name", "Work", new_name="Unique Name", note_index=2)
+  
+  # Duplicate validation (will fail if name already exists)
+  await update_note("Current Name", "Work", new_name="Existing Name")  # Error if exists
+  
+  # Cross-folder updates (same name can exist in different folders)
+  await update_note("Note Name", "Work", new_name="Note Name")  # OK if exists in different folder
   ```
 
 ##### `list_notes_with_structure`
@@ -335,10 +408,17 @@ async def move_folder(ctx: Context, source_path: str, folder_name: str, target_p
 
 ### **Core Note Management**
 
-#### `update_note`
-- **Purpose**: Modify existing note content and metadata
-- **Parameters**: `note_name`, `folder_path`, `new_name` (optional), `new_body` (optional)
+#### `update_note` ✅ **COMPLETED**
+- **Purpose**: Modify existing note content and metadata with duplicate validation
+- **Parameters**: `note_name`, `folder_path`, `new_name` (optional), `new_body` (optional), `note_index` (optional)
 - **Returns**: Updated note metadata
+- **Features**: 
+  - Handles both simple folders and nested paths
+  - **Duplicate name validation** when updating note names
+  - **Duplicate detection** with clear error messages for existing duplicates
+  - **Note index support** for handling multiple notes with same name
+  - **Smart validation** that excludes current note from duplicate check
+  - **Apple Notes Compliance**: Respects Apple Notes behavior (body updates affect name)
 - **AppleScript**: `tell application "Notes" to set properties of note`
 
 #### `delete_note`
@@ -459,7 +539,7 @@ async def move_folder(ctx: Context, source_path: str, folder_name: str, target_p
 9. ✅ `move_folder` - Move folder between locations
 
 ### **Phase 2: Update & Delete Operations** 🔄 **IN PROGRESS**
-1. `update_note` - Modify note content and metadata
+1. ✅ `update_note` - Modify note content and metadata with duplicate validation
 2. `delete_note` - Remove notes with confirmation
 3. `move_note_to_folder` - Organize notes between folders
 
@@ -504,6 +584,15 @@ await create_note("Sprint Planning", "Sprint planning content", "Work/Projects/2
 
 # Read note by name and path
 await read_note("Meeting Notes", "Work")
+
+# Update note name
+await update_note("Old Name", "Work", new_name="New Name")
+
+# Update note content
+await update_note("Note Name", "Work", new_body="Updated content")
+
+# Update both name and content
+await update_note("Old Name", "Work", new_name="New Name", new_body="Updated content")
 ```
 
 ### **Nested Folder Operations**

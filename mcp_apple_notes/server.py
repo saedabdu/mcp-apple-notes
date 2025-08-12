@@ -110,6 +110,47 @@ async def read_note(ctx: Context, note_name: str, folder_path: str = "Notes") ->
         await ctx.error(f"Error reading note: {str(e)}")
         raise
 
+@mcp.tool()
+async def update_note(ctx: Context, note_name: str, folder_path: str = "Notes", 
+                     new_name: Optional[str] = None, new_body: Optional[str] = None,
+                     note_index: Optional[int] = None) -> str:
+    """Update an existing note's name and/or content.
+    
+    This unified tool handles both simple folders and nested paths.
+    At least one of new_name or new_body must be provided.
+    
+    Args:
+        note_name: Current name of the note to update
+        folder_path: Folder path where the note is located (default: "Notes")
+        new_name: New name for the note (optional)
+        new_body: New content for the note (optional)
+        note_index: Index of the note to update if multiple notes have the same name (1-based, optional)
+    """
+    try:
+        updated_note = await notes_tools.update_note(note_name, folder_path, new_name, new_body, note_index)
+        
+        # Format the response
+        result = f"🔄 Note Update Result:\n"
+        result += f"📝 Note Name: {updated_note.get('name', 'N/A')}\n"
+        result += f"📂 Folder: {updated_note.get('folder', 'N/A')}\n"
+        result += f"📅 Creation Date: {updated_note.get('creation_date', 'N/A')}\n"
+        result += f"📅 Modification Date: {updated_note.get('modification_date', 'N/A')}\n"
+        result += f"✅ Status: {updated_note.get('status', 'N/A')}\n"
+        
+        return result
+        
+    except ValueError as e:
+        error_msg = f"Invalid input: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
+    except RuntimeError as e:
+        error_msg = f"Note not found or path error: {str(e)}"
+        await ctx.error(error_msg)
+        raise RuntimeError(error_msg)
+    except Exception as e:
+        await ctx.error(f"Error updating note: {str(e)}")
+        raise
+
 
 
 @mcp.tool()

@@ -98,6 +98,90 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         return str(body)
     
     @staticmethod
+    async def _check_duplicate_note(name: str, folder_path: str) -> bool:
+        """Check if a note with the same name already exists in the target folder.
+        
+        Args:
+            name: Name of the note to check
+            folder_path: Folder path to check in
+            
+        Returns:
+            True if a note with the same name exists, False otherwise
+        """
+        # Use AppleScript's quoted form for better special character handling
+        quoted_name = CreateNoteOperations._create_applescript_quoted_string(name)
+        
+        # Check if it's a simple folder (no slashes) or nested path
+        if '/' not in folder_path:
+            # Simple folder - use direct folder access
+            script = f'''
+            tell application "Notes"
+                try
+                    set targetFolder to folder "{folder_path}"
+                    set noteCount to 0
+                    repeat with currentNote in notes of targetFolder
+                        if name of currentNote is {quoted_name} then
+                            set noteCount to noteCount + 1
+                        end if
+                    end repeat
+                    return noteCount > 0
+                on error errMsg
+                    return false
+                end try
+            end tell
+            '''
+        else:
+            # Nested path - navigate to the folder first
+            path_components = FolderPathUtils.parse_folder_path(folder_path)
+            script = f'''
+            tell application "Notes"
+                try
+                    set currentFolder to missing value
+                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
+                    
+                    repeat with i from 1 to count of pathComponents
+                        set componentName to item i of pathComponents
+                        
+                        if currentFolder is missing value then
+                            -- Start from root folders
+                            repeat with rootFolder in folders
+                                if name of rootFolder is componentName then
+                                    set currentFolder to rootFolder
+                                    exit repeat
+                                end if
+                            end repeat
+                        else
+                            -- Navigate into subfolders
+                            repeat with subFolder in folders of currentFolder
+                                if name of subFolder is componentName then
+                                    set currentFolder to subFolder
+                                    exit repeat
+                                end if
+                            end repeat
+                        end if
+                    end repeat
+                    
+                    if currentFolder is missing value then
+                        return false
+                    end if
+                    
+                    set noteCount to 0
+                    repeat with currentNote in notes of currentFolder
+                        if name of currentNote is {quoted_name} then
+                            set noteCount to noteCount + 1
+                        end if
+                    end repeat
+                    return noteCount > 0
+                on error errMsg
+                    return false
+                end try
+            end tell
+            '''
+        
+        result = await CreateNoteOperations.execute_applescript(script)
+        return result == "true"
+    
+    @staticmethod
     async def create_note(name: str, body: str, folder_path: str = "Notes") -> Dict[str, str]:
         """Create a new note with specified name, body, and folder path.
         
@@ -126,6 +210,11 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         
         # Use the validated name (which has backticks removed if present)
         name = validated_name
+        
+        # Check for duplicate note name in the target folder
+        duplicate_exists = await CreateNoteOperations._check_duplicate_note(name, folder_path)
+        if duplicate_exists:
+            raise ValueError(f"Note with name '{name}' already exists in folder '{folder_path}'. Please use a different name.")
         
         # Escape problematic characters for AppleScript
         name = CreateNoteOperations._escape_applescript_string(name)

@@ -9,6 +9,7 @@ from ..applescript.rename_folder import RenameFolderOperations
 from ..applescript.move_folder import MoveFolderOperations
 from ..applescript.folder_structure import FolderStructureOperations
 from ..applescript.notes_structure import NotesStructureOperations
+from ..applescript.update_note import UpdateNoteOperations
 
 class NotesTools:
     """Tools for Apple Notes operations."""
@@ -187,4 +188,28 @@ class NotesTools:
     async def list_notes_with_structure(self) -> str:
         """List the complete folder structure with notes included in hierarchical tree format."""
         return await NotesStructureOperations.get_filtered_notes_structure()
+    
+    async def update_note(self, note_name: str, folder_path: str = "Notes", 
+                         new_name: Optional[str] = None, new_body: Optional[str] = None,
+                         note_index: Optional[int] = None) -> Dict[str, str]:
+        """Update an existing note's name and/or content.
+        
+        This unified method handles both simple folders and nested paths.
+        At least one of new_name or new_body must be provided.
+        
+        Args:
+            note_name: Current name of the note to update
+            folder_path: Folder path where the note is located (default: "Notes")
+            new_name: New name for the note (optional)
+            new_body: New content for the note (optional)
+            note_index: Index of the note to update if multiple notes have the same name (1-based, optional)
+            
+        Returns:
+            Updated note metadata
+            
+        Raises:
+            ValueError: If note name is empty or invalid, or if no updates provided
+            RuntimeError: If folder path doesn't exist or note not found
+        """
+        return await UpdateNoteOperations.update_note(note_name, folder_path, new_name, new_body, note_index)
 
