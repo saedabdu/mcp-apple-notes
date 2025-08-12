@@ -248,6 +248,44 @@ async def list_folder_with_structure(ctx: Context) -> str:
         raise
 
 @mcp.tool()
+async def delete_note(ctx: Context, note_name: str, folder_path: str = "Notes") -> str:
+    """Delete a note from Apple Notes.
+    
+    This unified tool handles both simple folders and nested paths.
+    
+    Args:
+        note_name: Name of the note to delete
+        folder_path: Folder path where the note is located (default: "Notes")
+    """
+    try:
+        deleted_note = await notes_tools.delete_note(note_name, folder_path)
+        
+        # Format the response
+        result = f"🗑️ Note Deletion Result:\n"
+        result += f"📝 Note Name: {deleted_note.get('name', 'N/A')}\n"
+        result += f"📂 Folder: {deleted_note.get('folder', 'N/A')}\n"
+        result += f"🆔 Note ID: {deleted_note.get('note_id', 'N/A')}\n"
+        result += f"📅 Creation Date: {deleted_note.get('creation_date', 'N/A')}\n"
+        result += f"📅 Modification Date: {deleted_note.get('modification_date', 'N/A')}\n"
+        result += f"📊 Total Matches: {deleted_note.get('total_matches', 'N/A')}\n"
+        result += f"🔢 Note Index: {deleted_note.get('note_index', 'N/A')}\n"
+        result += f"✅ Status: {deleted_note.get('status', 'N/A')}\n"
+        
+        return result
+        
+    except ValueError as e:
+        error_msg = f"Invalid input: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
+    except RuntimeError as e:
+        error_msg = f"Note not found or path error: {str(e)}"
+        await ctx.error(error_msg)
+        raise RuntimeError(error_msg)
+    except Exception as e:
+        await ctx.error(f"Error deleting note: {str(e)}")
+        raise
+
+@mcp.tool()
 async def list_notes_with_structure(ctx: Context) -> str:
     """List the complete folder structure with notes included in hierarchical tree format."""
     try:

@@ -10,6 +10,7 @@ from ..applescript.move_folder import MoveFolderOperations
 from ..applescript.folder_structure import FolderStructureOperations
 from ..applescript.notes_structure import NotesStructureOperations
 from ..applescript.update_note import UpdateNoteOperations
+from ..applescript.delete_note import DeleteNoteOperations
 
 class NotesTools:
     """Tools for Apple Notes operations."""
@@ -212,4 +213,22 @@ class NotesTools:
             RuntimeError: If folder path doesn't exist or note not found
         """
         return await UpdateNoteOperations.update_note(note_name, folder_path, new_name, new_body, note_index)
+    
+    async def delete_note(self, note_name: str, folder_path: str = "Notes") -> Dict[str, str]:
+        """Delete a note from Apple Notes.
+        
+        This unified method handles both simple folders and nested paths.
+        
+        Args:
+            note_name: Name of the note to delete
+            folder_path: Folder path where the note is located (default: "Notes")
+            
+        Returns:
+            Deletion result with status and details
+            
+        Raises:
+            ValueError: If note name is empty or invalid
+            RuntimeError: If folder path doesn't exist, note not found, or duplicate names exist
+        """
+        return await DeleteNoteOperations.delete_note(note_name, folder_path)
 

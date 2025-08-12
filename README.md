@@ -120,6 +120,8 @@ await read_note("Sprint Planning", "Work/Projects/2024/Q1")
 | `list_folder_with_structure` | List complete folder structure | None |
 | `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes") |
 | `read_note` | Read notes by name and path (unified - handles simple and nested paths) | `note_name` (string), `folder_path` (string, optional, default: "Notes") |
+| `update_note` | Update note content and metadata with duplicate validation | `note_name` (string), `folder_path` (string, optional, default: "Notes"), `new_name` (string, optional), `new_body` (string, optional), `note_index` (integer, optional) |
+| `delete_note` | Delete notes with duplicate handling | `note_name` (string), `folder_path` (string, optional, default: "Notes") |
 | `create_folder` | Create folder with optional path | `folder_name` (string), `folder_path` (string, optional) |
 | `get_folder_details` | Get comprehensive folder details | `folder_name` (string) |
 | `rename_folder` | Rename folder with path support | `folder_path` (string), `current_name` (string), `new_name` (string) |

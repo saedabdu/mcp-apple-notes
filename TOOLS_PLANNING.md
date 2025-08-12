@@ -2,9 +2,9 @@
 
 ## **📋 Complete Tools Summary**
 
-### **✅ Currently Available Tools (10 total)**
+### **✅ Currently Available Tools (11 total)**
 
-#### **Core Note Management (4 tools)**
+#### **Core Note Management (5 tools)**
 1. ✅ `create_note` - Create note with unified folder support
    - **Description**: Creates a new note with specified name and content. Handles both simple folders and nested paths automatically.
    - **Parameters**: `name` (string), `body` (string), `folder_path` (string, optional, default: "Notes")
@@ -17,7 +17,11 @@
    - **Description**: Updates existing note content, name, or both while preserving creation date. Prevents duplicate names in the same folder.
    - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes"), `new_name` (string, optional), `new_body` (string, optional), `note_index` (integer, optional)
    - **Features**: Handles both simple folders and nested paths, **duplicate name validation**, **duplicate detection with clear error messages**, supports note_index for multiple notes with same name
-4. ✅ `list_notes_with_structure` - List complete folder structure with notes included
+4. ✅ `delete_note` - Delete notes with duplicate handling
+   - **Description**: Permanently removes notes from folders with comprehensive duplicate handling.
+   - **Parameters**: `note_name` (string), `folder_path` (string, optional, default: "Notes")
+   - **Features**: Handles both simple folders and nested paths, **duplicate name handling**, **path validation**, **comprehensive error handling**
+5. ✅ `list_notes_with_structure` - List complete folder structure with notes included
    - **Description**: Returns the complete folder structure with notes included in hierarchical tree format
 
 #### **Folder Operations (6 tools)**
@@ -32,11 +36,10 @@
 9. ✅ `move_folder` - Move folder between locations
    - **Description**: Moves a folder from one location to another, supporting root level and nested paths
 
-### **🔄 Planned Tools (16 total)**
+### **🔄 Planned Tools (15 total)**
 
-#### **Core Note Management (1 tool)**
-- 🔄 `delete_note` - Remove notes with confirmation
-  - **Description**: Permanently removes notes from folders with optional confirmation prompts
+#### **Core Note Management (0 tools)**
+- ✅ **COMPLETED**: All core note management tools are now implemented
 
 #### **Note Organization (1 tool)**
 - 🔄 `move_note_to_folder` - Organize notes between folders
@@ -70,8 +73,8 @@
   - **Description**: Brings Apple Notes application to the foreground
 
 ### **📊 Implementation Progress**
-- **✅ Completed**: 10 tools (38%)
-- **🔄 Planned**: 16 tools (62%)
+- **✅ Completed**: 11 tools (42%)
+- **🔄 Planned**: 15 tools (58%)
 - **📈 Total**: 26 tools
 
 ---
@@ -130,8 +133,8 @@
 - ✅ `create_note` - Create note with unified folder support (simple and nested paths)
 - ✅ `read_note` - Read notes by name and path (unified - simple and nested paths)
 - ✅ `update_note` - Update note content and metadata with duplicate validation
+- ✅ `delete_note` - Delete notes with confirmation and duplicate handling
 - ✅ `list_notes_with_structure` - Get complete folder structure with notes included
-- 🔄 `delete_note` - Remove notes
 
 ### **Folder Operations**
 - ✅ `list_folder_with_structure` - Get complete folder structure with hierarchy
@@ -538,9 +541,9 @@ async def move_folder(ctx: Context, source_path: str, folder_name: str, target_p
 8. ✅ `rename_folder` - Rename folder with path support
 9. ✅ `move_folder` - Move folder between locations
 
-### **Phase 2: Update & Delete Operations** 🔄 **IN PROGRESS**
+### **Phase 2: Update & Delete Operations** ✅ **COMPLETED**
 1. ✅ `update_note` - Modify note content and metadata with duplicate validation
-2. `delete_note` - Remove notes with confirmation
+2. ✅ `delete_note` - Remove notes with confirmation and duplicate handling
 3. `move_note_to_folder` - Organize notes between folders
 
 ### **Phase 3: Advanced Search & Query**
@@ -593,6 +596,12 @@ await update_note("Note Name", "Work", new_body="Updated content")
 
 # Update both name and content
 await update_note("Old Name", "Work", new_name="New Name", new_body="Updated content")
+
+# Delete note by name
+await delete_note("Meeting Notes", "Work")
+
+# Delete note from nested folder
+await delete_note("Sprint Planning", "Work/Projects/2024/Q1")
 ```
 
 ### **Nested Folder Operations**
