@@ -14,6 +14,7 @@ from ..applescript.delete_note import DeleteNoteOperations
 from ..applescript.move_note import MoveNoteOperations
 from ..applescript.validation_utils import ValidationUtils
 from ..applescript.note_id_utils import NoteIDUtils
+from ..applescript.list_notes import ListNotesOperations
 
 class NotesTools:
     """Tools for Apple Notes operations."""
@@ -139,6 +140,17 @@ class NotesTools:
         """List the complete folder structure with notes included in hierarchical tree format."""
         return await NotesStructureOperations.get_filtered_notes_structure()
     
+    async def list_notes(self, folder_path: Optional[str] = None) -> List[Dict[str, str]]:
+        """List notes with their names and IDs from all folders or a specific folder.
+
+        Args:
+            folder_path: Optional folder path to filter notes. If None, gets all notes.
+
+        Returns:
+            List of dictionaries containing note information (name, id, folder)
+        """
+        return await ListNotesOperations.get_notes_with_ids_by_folder(folder_path)
+    
     async def update_note(self, note_name: str, folder_path: str = "Notes", 
                          new_name: Optional[str] = None, new_body: Optional[str] = None) -> Dict[str, str]:
         """Update an existing note's name and/or content.
@@ -165,7 +177,7 @@ class NotesTools:
             
             if note_id_result['status'] == 'single':
                 # Use the note ID to update the note directly
-                return await UpdateNoteOperations.update_note_by_id(note_id_result['note_id'], folder_path, new_name, new_body)
+                return await UpdateNoteOperations.update_note_by_id(note_id_result['note_id'], new_name, new_body)
             elif note_id_result['status'] == 'multiple':
                 # Return information about duplicate notes
                 return {
@@ -180,6 +192,26 @@ class NotesTools:
         except Exception as e:
             # Fallback to the original method if the new system fails
             return await UpdateNoteOperations.update_note(note_name, folder_path, new_name, new_body)
+    
+    async def update_note_by_id(self, note_id: str, new_name: Optional[str] = None, new_body: Optional[str] = None) -> Dict[str, str]:
+        """Update an existing note by its primary key ID.
+        
+        This method updates a note directly using its primary key ID (e.g., "p1234").
+        If new_name or new_body are not provided, the current values are preserved.
+        
+        Args:
+            note_id: Primary key ID of the note (e.g., "p1234")
+            new_name: New name for the note (optional - if not provided, current name is preserved)
+            new_body: New content for the note (optional - if not provided, current body is preserved)
+            
+        Returns:
+            Updated note metadata with primary key ID
+            
+        Raises:
+            ValueError: If note ID is invalid
+            RuntimeError: If note not found by ID
+        """
+        return await UpdateNoteOperations.update_note_by_id(note_id, new_name, new_body)
     
     async def delete_note(self, note_name: str, folder_path: str = "Notes") -> Dict[str, str]:
         """Delete a note from Apple Notes.
@@ -262,3 +294,27 @@ class NotesTools:
             # Fallback to the original method if the new system fails
             return await MoveNoteOperations.move_note(note_name, source_folder_path, target_folder_path)
 
+    async def list_notes(self, folder_path: str = "Notes") -> List[Dict[str, str]]:
+        """Get a list of all notes in the specified folder path with their IDs and names.
+        
+        This unified method handles both simple folders and nested paths.
+        
+        Args:
+            folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). Defaults to "Notes".
+            
+        Returns:
+            List of dictionaries with note_id, name, and folder info
+            
+        Raises:
+            ValueError: If folder path is invalid
+            RuntimeError: If folder path doesn't exist
+        """
+        return await ListNotesOperations.list_notes(folder_path)
+    
+    async def list_all_notes(self) -> List[Dict[str, str]]:
+        """Get a list of all notes across all folders with their IDs and names.
+        
+        Returns:
+            List of dictionaries with note_id, name, and folder info
+        """
+        return await ListNotesOperations.list_all_notes()

@@ -1,13 +1,15 @@
 # MCP Apple Notes - Tools Planning
 
-## **✅ Current Tools (12 total)**
+## **✅ Current Tools (14 total)**
 
-### **Core Note Management (5 tools)**
+### **Core Note Management (7 tools)**
 1. ✅ `create_note`
 2. ✅ `read_note`
 3. ✅ `update_note`
 4. ✅ `delete_note`
-5. ✅ `list_notes_with_structure`
+5. ✅ `list_notes`
+6. ✅ `list_all_notes`
+7. ✅ `list_notes_with_structure`
 
 ### **Folder Operations (6 tools)**
 6. ✅✅ `list_folder_with_structure`
@@ -17,7 +19,7 @@
 10. ✅✅ `move_folder`
 11. ✅ `move_note`
 
-## **🔄 Planned Tools (14 total)**
+## **🔄 Planned Tools (12 total)**
 
 ### **Search & Query (3 tools)**
 1. `search_notes`
@@ -44,8 +46,8 @@
 14. `move_note_to_folder` Already done as Move Folder
 
 ## **📊 Implementation Progress**
-- **✅ Completed**: 12 tools (46%)
-- **🔄 Planned**: 14 tools (54%)
+- **✅ Completed**: 14 tools (54%)
+- **🔄 Planned**: 12 tools (46%)
 - **📈 Total**: 26 tools
 
 ## **Legend**

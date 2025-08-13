@@ -490,3 +490,4 @@ class ValidationUtils(BaseAppleScriptOperations):
             
         except Exception:
             return []
+        

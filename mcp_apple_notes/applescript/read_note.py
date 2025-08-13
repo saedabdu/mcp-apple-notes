@@ -1,6 +1,7 @@
 from typing import Dict, Optional, List
 from .base_operations import BaseAppleScriptOperations
 from .folder_utils import FolderPathUtils
+from .validation_utils import ValidationUtils
 
 class ReadNoteOperations(BaseAppleScriptOperations):
     """Operations for reading Apple Notes content."""
@@ -8,36 +9,7 @@ class ReadNoteOperations(BaseAppleScriptOperations):
     @staticmethod
     def _validate_note_name(name: str) -> str:
         """Validate and clean note name."""
-        if not name or not name.strip():
-            raise ValueError("Note name cannot be empty or contain only whitespace")
-        
-        # Clean the name
-        name = name.strip()
-        
-        # Handle backtick-escaped names
-        if name.startswith('`') and name.endswith('`'):
-            # Extract the name from backticks and skip validation
-            escaped_name = name[1:-1]  # Remove backticks
-            if not escaped_name:
-                raise ValueError("Note name cannot be empty when using backtick escaping")
-            
-            # Check for Apple Notes title length limit (250 characters)
-            if len(escaped_name) > 250:
-                raise ValueError(f"Note name exceeds Apple Notes limit of 250 characters (current: {len(escaped_name)} characters)")
-            
-            return escaped_name
-        
-        # Check for Apple Notes title length limit (250 characters)
-        if len(name) > 250:
-            raise ValueError(f"Note name exceeds Apple Notes limit of 250 characters (current: {len(name)} characters)")
-        
-        # Check for invalid characters (basic validation) - only for non-escaped names
-        invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        for char in invalid_chars:
-            if char in name:
-                raise ValueError(f"Note name contains invalid character '{char}'. Use backticks (`name`) to escape special characters.")
-        
-        return name
+        return ValidationUtils.validate_note_name(name)
     
     @staticmethod
     def _truncate_note_name(name: str, max_length: int = 250) -> str:
@@ -244,7 +216,7 @@ class ReadNoteOperations(BaseAppleScriptOperations):
                         if currentFolder is missing value then
                             -- Check root folders
                             set found to false
-                            repeat with rootFolder in every folder
+                            repeat with rootFolder in folders
                                 if name of rootFolder is componentName then
                                     set currentFolder to rootFolder
                                     set found to true
@@ -257,7 +229,7 @@ class ReadNoteOperations(BaseAppleScriptOperations):
                         else
                             -- Check subfolders
                             set found to false
-                            repeat with subFolder in every folder of currentFolder
+                            repeat with subFolder in folders of currentFolder
                                 if name of subFolder is componentName then
                                     set currentFolder to subFolder
                                     set found to true

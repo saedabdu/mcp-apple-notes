@@ -1,6 +1,7 @@
 from typing import Dict, Optional, List
 from .base_operations import BaseAppleScriptOperations
 from .folder_utils import FolderPathUtils
+from .validation_utils import ValidationUtils
 
 class DeleteNoteOperations(BaseAppleScriptOperations):
     """Operations for deleting Apple Notes."""
@@ -290,7 +291,7 @@ class DeleteNoteOperations(BaseAppleScriptOperations):
                         if currentFolder is missing value then
                             -- Check root folders
                             set found to false
-                            repeat with rootFolder in every folder
+                            repeat with rootFolder in folders
                                 if name of rootFolder is componentName then
                                     set currentFolder to rootFolder
                                     set found to true
@@ -303,7 +304,7 @@ class DeleteNoteOperations(BaseAppleScriptOperations):
                         else
                             -- Check subfolders
                             set found to false
-                            repeat with subFolder in every folder of currentFolder
+                            repeat with subFolder in folders of currentFolder
                                 if name of subFolder is componentName then
                                     set currentFolder to subFolder
                                     set found to true

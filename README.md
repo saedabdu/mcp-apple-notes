@@ -111,7 +111,7 @@ await read_note("Sprint Planning", "Work/Projects/2024/Q1")
 - ✅ **Character Escaping**: Automatically handles quotes and backslashes
 - ✅ **Backward Compatible**: Works with existing simple folder usage
 - ✅ **Error Handling**: Comprehensive validation and error messages
-- ✅ **Rich Content Support**: Plain text, HTML, Unicode, URLs, checklists, code blocks
+- ✅ **Rich HTML Content**: Professional documentation with headers, tables, lists, formatting, and structured layouts
 
 ### **📝 Supported Content Types**
 
@@ -123,9 +123,52 @@ await create_note("Status", "🚀 Project: ✅ Complete\n📱 Mobile: 🔄 In Pr
 ```
 
 #### **HTML Formatting**
+Apple Notes provides excellent HTML support for creating professional, structured content:
+
+**✅ Fully Supported HTML Elements:**
+- **Headers:** `<h1>`, `<h2>`, `<h3>`, `<h4>`, `<h5>`, `<h6>`
+- **Text Formatting:** `<b>`, `<strong>`, `<i>`, `<em>`, `<u>`, `<s>`
+- **Structure:** `<p>`, `<div>`, `<br>`, `<blockquote>`
+- **Lists:** `<ul><li>`, `<ol><li>` (nested lists supported)
+- **Tables:** `<table><tr><th><td>` (excellent for data presentation)
+- **Links:** `<a href="...">` (avoid URLs with numbers)
+
 ```python
-await create_note("Formatted", "<h1>Title</h1><p><strong>Bold</strong> and <em>italic</em></p>")
+# Professional Documentation Example
+await create_note("Project Report", """
+<h1>🚀 Project Status Report</h1>
+<h2>📊 Overview</h2>
+<p>Current status: <b>In Progress</b> | Priority: <u>High</u></p>
+
+<h3>✅ Completed Tasks</h3>
+<ul>
+    <li><b>Frontend:</b> User interface completed</li>
+    <li><b>Backend:</b> API endpoints functional</li>
+    <li><b>Database:</b> Schema implemented</li>
+</ul>
+
+<h3>📋 Task Status</h3>
+<table>
+    <tr><th>Component</th><th>Status</th><th>Progress</th></tr>
+    <tr><td>Authentication</td><td>✅ Complete</td><td>100%</td></tr>
+    <tr><td>User Dashboard</td><td>🔄 In Progress</td><td>75%</td></tr>
+    <tr><td>Reporting</td><td>⏳ Pending</td><td>0%</td></tr>
+</table>
+
+<h3>🎯 Next Steps</h3>
+<ol>
+    <li>Complete dashboard implementation</li>
+    <li>Begin reporting module</li>
+    <li>Conduct user testing</li>
+</ol>
+""", "Work/Projects/2024")
 ```
+
+**⚠️ HTML Limitations:**
+- No CSS inline styles (use HTML formatting instead)
+- No numeric attributes (use `<table>` not `<table border="1">`)
+- No form elements (`<input>`, `<textarea>`)
+- No JavaScript or external resources
 
 #### **Checklists**
 ```python
@@ -186,6 +229,8 @@ await create_note("Test", "Line 1<br>Line 2<br>Line 3")
 
 | Tool | Description | Parameters |
 |------|-------------|------------|
+| `list_notes` | List notes with names and IDs from a specific folder path | `folder_path` (string, optional, default: "Notes") |
+| `list_all_notes` | List all notes across all folders with names and IDs | None |
 | `list_notes_with_structure` | List complete folder structure with notes included | None |
 | `list_folder_with_structure` | List complete folder structure | None |
 | `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string, supports HTML/Unicode/URLs), `folder_path` (string, optional, default: "Notes") |

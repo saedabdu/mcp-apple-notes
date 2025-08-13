@@ -1,185 +1,11 @@
-from typing import Dict, Any
+from typing import Dict
 from .base_operations import BaseAppleScriptOperations
 from .folder_utils import FolderPathUtils
+from .validation_utils import ValidationUtils
+from .note_id_utils import NoteIDUtils
 
 class CreateNoteOperations(BaseAppleScriptOperations):
     """Operations for creating Apple Notes."""
-    
-    @staticmethod
-    def _escape_applescript_string(text: str) -> str:
-        """Escape problematic characters for AppleScript strings.
-        
-        Args:
-            text: The text to escape
-            
-        Returns:
-            Escaped text safe for AppleScript
-        """
-        if not text:
-            return ""
-        
-        # Use AppleScript's quoted form for better handling of special characters
-        # This is more reliable than manual escaping
-        return text
-    
-    @staticmethod
-    def _create_applescript_quoted_string(text: str) -> str:
-        """Create AppleScript quoted string that handles special characters properly.
-        
-        Args:
-            text: The text to quote
-            
-        Returns:
-            AppleScript quoted string
-        """
-        if not text:
-            return '""'
-        
-        # Escape the text for AppleScript string literals
-        escaped_text = text.replace('\\', '\\\\').replace('"', '\\"')
-        return f'"{escaped_text}"'
-    
-    @staticmethod
-    def _validate_note_name(name: str) -> str:
-        """Validate and clean note name."""
-        if not name or not name.strip():
-            raise ValueError("Note name cannot be empty or contain only whitespace")
-        
-        # Clean the name
-        name = name.strip()
-        
-        # Handle backtick-escaped names
-        if name.startswith('`') and name.endswith('`'):
-            # Extract the name from backticks and skip validation
-            escaped_name = name[1:-1]  # Remove backticks
-            if not escaped_name:
-                raise ValueError("Note name cannot be empty when using backtick escaping")
-            
-            # Check for Apple Notes title length limit (250 characters)
-            if len(escaped_name) > 250:
-                raise ValueError(f"Note name exceeds Apple Notes limit of 250 characters (current: {len(escaped_name)} characters)")
-            
-            # Return the escaped name without backticks
-            return escaped_name.strip()
-        
-        # Check for Apple Notes title length limit (250 characters)
-        if len(name) > 250:
-            raise ValueError(f"Note name exceeds Apple Notes limit of 250 characters (current: {len(name)} characters)")
-        
-        # Check for invalid characters (basic validation) - only for non-escaped names
-        invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        for char in invalid_chars:
-            if char in name:
-                raise ValueError(f"Note name contains invalid character '{char}'. Use backticks (`name`) to escape special characters.")
-        
-        return name
-    
-    @staticmethod
-    def _truncate_note_name(name: str, max_length: int = 250) -> str:
-        """Intelligently truncate note name to fit Apple Notes limit."""
-        if len(name) <= max_length:
-            return name
-        
-        # Try to truncate at word boundaries
-        truncated = name[:max_length-3]  # Leave room for "..."
-        
-        # Find the last space to avoid cutting words
-        last_space = truncated.rfind(' ')
-        if last_space > max_length * 0.7:  # If we can find a space in the last 30%
-            truncated = truncated[:last_space]
-        
-        return truncated + "..."
-    
-    @staticmethod
-    def _validate_note_body(body: str) -> str:
-        """Validate note body."""
-        if body is None:
-            body = ""
-        return str(body)
-    
-    @staticmethod
-    async def _check_duplicate_note(name: str, folder_path: str) -> bool:
-        """Check if a note with the same name already exists in the target folder.
-        
-        Args:
-            name: Name of the note to check
-            folder_path: Folder path to check in
-            
-        Returns:
-            True if a note with the same name exists, False otherwise
-        """
-        # Use AppleScript's quoted form for better special character handling
-        quoted_name = CreateNoteOperations._create_applescript_quoted_string(name)
-        
-        # Check if it's a simple folder (no slashes) or nested path
-        if '/' not in folder_path:
-            # Simple folder - use direct folder access
-            script = f'''
-            tell application "Notes"
-                try
-                    set targetFolder to folder "{folder_path}"
-                    set noteCount to 0
-                    repeat with currentNote in notes of targetFolder
-                        if name of currentNote is {quoted_name} then
-                            set noteCount to noteCount + 1
-                        end if
-                    end repeat
-                    return noteCount > 0
-                on error errMsg
-                    return false
-                end try
-            end tell
-            '''
-        else:
-            # Nested path - navigate to the folder first
-            path_components = FolderPathUtils.parse_folder_path(folder_path)
-            script = f'''
-            tell application "Notes"
-                try
-                    set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
-                    
-                    repeat with i from 1 to count of pathComponents
-                        set componentName to item i of pathComponents
-                        
-                        if currentFolder is missing value then
-                            -- Start from root folders
-                            repeat with rootFolder in folders
-                                if name of rootFolder is componentName then
-                                    set currentFolder to rootFolder
-                                    exit repeat
-                                end if
-                            end repeat
-                        else
-                            -- Navigate into subfolders
-                            repeat with subFolder in folders of currentFolder
-                                if name of subFolder is componentName then
-                                    set currentFolder to subFolder
-                                    exit repeat
-                                end if
-                            end repeat
-                        end if
-                    end repeat
-                    
-                    if currentFolder is missing value then
-                        return false
-                    end if
-                    
-                    set noteCount to 0
-                    repeat with currentNote in notes of currentFolder
-                        if name of currentNote is {quoted_name} then
-                            set noteCount to noteCount + 1
-                        end if
-                    end repeat
-                    return noteCount > 0
-                on error errMsg
-                    return false
-                end try
-            end tell
-            '''
-        
-        result = await CreateNoteOperations.execute_applescript(script)
-        return result == "true"
     
     @staticmethod
     async def create_note(name: str, body: str, folder_path: str = "Notes") -> Dict[str, str]:
@@ -188,59 +14,49 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         This unified method handles both simple folders and nested paths.
         The folder path must exist before creating the note.
         
+        IMPORTANT: The body parameter should contain HTML-formatted content.
+        The title will be automatically wrapped in <h1> tags and prepended to the body.
+        
         Args:
-            name: Name of the note
-            body: Content of the note
+            name: Name of the note (will be wrapped in <h1> tags)
+            body: HTML content of the note (should include proper HTML tags)
             folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). 
                         Must exist before creating note. Defaults to "Notes".
         """
         # Validate and clean inputs
         try:
-            validated_name = CreateNoteOperations._validate_note_name(name)
+            validated_name = ValidationUtils.validate_note_name(name)
         except ValueError as e:
             # If name is too long, truncate it intelligently
             if "exceeds Apple Notes limit" in str(e):
-                validated_name = CreateNoteOperations._truncate_note_name(name)
-                validated_name = CreateNoteOperations._validate_note_name(validated_name)  # Validate the truncated name
+                validated_name = ValidationUtils.truncate_note_name(name)
+                validated_name = ValidationUtils.validate_note_name(validated_name)  # Validate the truncated name
             else:
                 raise e
         
-        body = CreateNoteOperations._validate_note_body(body)
+        body = ValidationUtils.validate_note_body(body)
         folder_path = folder_path.strip()
         
-        # Use the validated name (which has backticks removed if present)
-        name = validated_name
-        
-        # Check for duplicate note name in the target folder
-        duplicate_exists = await CreateNoteOperations._check_duplicate_note(name, folder_path)
-        if duplicate_exists:
-            raise ValueError(f"Note with name '{name}' already exists in folder '{folder_path}'. Please use a different name.")
-        
-        # Escape problematic characters for AppleScript
-        name = CreateNoteOperations._escape_applescript_string(name)
-        body = CreateNoteOperations._escape_applescript_string(body)
+        # Format title with h1 tag and concatenate with body as HTML content
+        html_content = f"<h1>{validated_name}</h1><br>{body}"
         
         # Check if it's a simple folder (no slashes) or nested path
         if '/' not in folder_path:
             # Simple folder - use direct folder access
-            return await CreateNoteOperations._create_note_in_simple_folder(name, body, folder_path)
+            return await CreateNoteOperations._create_note_in_simple_folder(validated_name, html_content, folder_path)
         else:
             # Nested path - validate path exists and create note
-            return await CreateNoteOperations._create_note_in_nested_path(name, body, folder_path)
+            return await CreateNoteOperations._create_note_in_nested_path(validated_name, html_content, folder_path)
     
     @staticmethod
-    async def _create_note_in_simple_folder(name: str, body: str, folder_name: str) -> Dict[str, str]:
+    async def _create_note_in_simple_folder(name: str, html_content: str, folder_name: str) -> Dict[str, str]:
         """Create a new note in a simple folder (no nested paths)."""
-        # Use AppleScript's quoted form for better special character handling
-        quoted_name = CreateNoteOperations._create_applescript_quoted_string(name)
-        quoted_body = CreateNoteOperations._create_applescript_quoted_string(body)
-        
         script = f'''
         tell application "Notes"
             try
                 set targetFolder to folder "{folder_name}"
-                set newNote to make new note at targetFolder with properties {{name:{quoted_name}, body:{quoted_body}}}
-                return {{name:(name of newNote), folder:"{folder_name}", creation_date:(creation date of newNote as string), modification_date:(modification date of newNote as string)}}
+                set newNote to make new note at targetFolder with properties {{body:"{html_content}"}}
+                return {{name:(name of newNote), folder:"{folder_name}", note_id:(id of newNote as string)}}
             on error errMsg
                 return "error:" & errMsg
             end try
@@ -255,10 +71,10 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         return CreateNoteOperations._parse_note_result(result, folder_name)
     
     @staticmethod
-    async def _create_note_in_nested_path(name: str, body: str, folder_path: str) -> Dict[str, str]:
+    async def _create_note_in_nested_path(name: str, html_content: str, folder_path: str) -> Dict[str, str]:
         """Create a new note in a nested folder path. Path must exist."""
         # Validate that the folder path exists
-        path_exists = await CreateNoteOperations._check_path_exists(folder_path)
+        path_exists = await ValidationUtils.check_path_exists(folder_path)
         if not path_exists:
             raise RuntimeError(f"Folder path '{folder_path}' does not exist. Please create the folder structure first.")
         
@@ -266,10 +82,6 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         path_components = FolderPathUtils.parse_folder_path(folder_path)
         
         # Create the note in the existing folder
-        # Use AppleScript's quoted form for better special character handling
-        quoted_name = CreateNoteOperations._create_applescript_quoted_string(name)
-        quoted_body = CreateNoteOperations._create_applescript_quoted_string(body)
-        
         script = f'''
         tell application "Notes"
             try
@@ -302,8 +114,8 @@ class CreateNoteOperations(BaseAppleScriptOperations):
                     return "error:Target folder not found"
                 end if
                 
-                set newNote to make new note at currentFolder with properties {{name:{quoted_name}, body:{quoted_body}}}
-                return {{name:(name of newNote), folder:"{folder_path}", creation_date:(creation date of newNote as string), modification_date:(modification date of newNote as string)}}
+                set newNote to make new note at currentFolder with properties {{body:"{html_content}"}}
+                return {{name:(name of newNote), folder:"{folder_path}", note_id:(id of newNote as string)}}
             on error errMsg
                 return "error:" & errMsg
             end try
@@ -319,64 +131,6 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         return CreateNoteOperations._parse_note_result(result, folder_path)
     
     @staticmethod
-    async def _check_path_exists(folder_path: str) -> bool:
-        """Check if a folder path exists."""
-        try:
-            path_components = FolderPathUtils.parse_folder_path(folder_path)
-            if not path_components:
-                return False
-            
-            script = f'''
-            tell application "Notes"
-                try
-                    set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
-                    
-                    repeat with i from 1 to count of pathComponents
-                        set componentName to item i of pathComponents
-                        
-                        if currentFolder is missing value then
-                            -- Check root folders
-                            set found to false
-                            repeat with rootFolder in every folder
-                                if name of rootFolder is componentName then
-                                    set currentFolder to rootFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        else
-                            -- Check subfolders
-                            set found to false
-                            repeat with subFolder in every folder of currentFolder
-                                if name of subFolder is componentName then
-                                    set currentFolder to subFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        end if
-                    end repeat
-                    
-                    return "exists"
-                on error errMsg
-                    return "error:" & errMsg
-                end try
-            end tell
-            '''
-            
-            result = await CreateNoteOperations.execute_applescript(script)
-            return result == "exists"
-        except Exception:
-            return False
-    
-    @staticmethod
     def _parse_note_result(result: str, folder_path: str) -> Dict[str, str]:
         """Parse the AppleScript result and return note information."""
         try:
@@ -385,22 +139,24 @@ class CreateNoteOperations(BaseAppleScriptOperations):
             name_end = result.find(', folder:', name_start)
             name = result[name_start:name_end].strip()
             
+            # Remove quotes from the name if present
+            if name.startswith('"') and name.endswith('"'):
+                name = name[1:-1]
+            
             folder_start = result.find('folder:') + 7
-            folder_end = result.find(', creation_date:', folder_start)
+            folder_end = result.find(', note_id:', folder_start)
             folder = result[folder_start:folder_end].strip()
             
-            creation_start = result.find('creation_date:') + 14
-            creation_end = result.find(', modification_date:', creation_start)
-            creation_date = result[creation_start:creation_end].strip()
+            note_id_start = result.find('note_id:') + 8
+            full_note_id = result[note_id_start:].strip().rstrip(',')
             
-            modification_start = result.find('modification_date:') + 18
-            modification_date = result[modification_start:].strip().rstrip(',')
+            # Extract just the primary key from the full note ID
+            primary_key = NoteIDUtils.extract_primary_key(full_note_id)
             
             return {
                 'name': name,
                 'folder': folder,
-                'creation_date': creation_date,
-                'modification_date': modification_date
+                'note_id': primary_key
             }
         except Exception as e:
             raise RuntimeError(f"Failed to parse created note result: {str(e)}")

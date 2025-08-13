@@ -10,6 +10,8 @@ from .rename_folder import RenameFolderOperations
 from .move_folder import MoveFolderOperations
 from .folder_structure import FolderStructureOperations
 from .notes_structure import NotesStructureOperations
+from .validation_utils import ValidationUtils
+from .note_id_utils import NoteIDUtils
 
 __all__ = [
     'BaseAppleScriptOperations',
@@ -23,5 +25,7 @@ __all__ = [
     'RenameFolderOperations',
     'MoveFolderOperations',
     'FolderStructureOperations',
-    'NotesStructureOperations'
+    'NotesStructureOperations',
+    'ValidationUtils',
+    'NoteIDUtils'
 ]

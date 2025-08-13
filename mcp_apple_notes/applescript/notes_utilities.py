@@ -170,3 +170,5 @@ class AppleScriptNotesUtilities(BaseAppleScriptOperations):
             return int(result)
         except ValueError:
             return 0
+
+

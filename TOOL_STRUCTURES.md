@@ -239,7 +239,7 @@ Tool Call → Server → Tools → AppleScript → Path Navigation → Rename �
 🔄 create_note Tool Flow
 ├── 1. Tool Call
 │   ├── User provides name
-│   ├── User provides body
+│   ├── User provides body (HTML-formatted content)
 │   └── User provides folder_path (optional, defaults to "Notes")
 │
 ├── 2. Server Layer Processing
@@ -256,23 +256,28 @@ Tool Call → Server → Tools → AppleScript → Path Navigation → Rename �
 │   │   ├── Check note name not empty/whitespace
 │   │   ├── Validate name length (max 128 chars)
 │   │   ├── Check for invalid characters (< > : " | ? *)
+│   │   ├── Validate note body content
 │   │   └── Validate folder path if provided
 │   │
-│   ├── Step 4b: Path Processing
-│   │   ├── If folder_path is "Notes" → simple folder creation
+│   ├── Step 4b: Duplicate Detection
+│   │   ├── Check for existing note with same name
+│   │   ├── Use centralized validation utilities
+│   │   └── Prevent creation if duplicate found
+│   │
+│   ├── Step 4c: HTML Content Processing
+│   │   ├── Wrap title in <h1> tags automatically
+│   │   ├── Concatenate: html_content = "<h1>{name}</h1>{body}"
+│   │   ├── No additional processing or escaping
+│   │   └── Pass complete HTML content to AppleScript
+│   │
+│   ├── Step 4d: Path Processing
+│   │   ├── If folder_path is simple (no slashes) → simple folder creation
 │   │   ├── If folder_path is nested → split into components
 │   │   ├── Check each path component exists
 │   │   └── Validate nesting depth (max 5 levels)
 │   │
-│   ├── Step 4c: Content Processing
-│   │   ├── Handle plain text content
-│   │   ├── Process HTML formatting tags
-│   │   ├── Support Unicode characters and emojis
-│   │   ├── Handle special characters and symbols
-│   │   └── Process line breaks (<br> instead of \n)
-│   │
-│   └── Step 4d: Note Creation
-│       ├── Build AppleScript command
+│   └── Step 4e: Note Creation
+│       ├── Build AppleScript command with HTML content
 │       ├── Execute via subprocess
 │       ├── Create note in target folder
 │       └── Return creation details
@@ -286,7 +291,7 @@ Tool Call → Server → Tools → AppleScript → Path Navigation → Rename �
 ├── 6. AppleScript Content
 │   ├── Simple folder vs nested path logic
 │   ├── Path navigation for nested folders
-│   ├── Note creation with content
+│   ├── Note creation with HTML content
 │   ├── Error handling with descriptive messages
 │   └── Return structured creation details
 │
@@ -298,10 +303,11 @@ Tool Call → Server → Tools → AppleScript → Path Navigation → Rename �
 │
 ├── 8. Error Handling
 │   ├── Invalid input errors (empty name, special chars)
+│   ├── Duplicate name errors
 │   ├── Path not found errors
 │   ├── Folder not found errors
 │   ├── AppleScript execution errors
-│   ├── Content processing errors
+│   ├── HTML content processing errors
 │   └── Provide helpful error messages
 │
 └── 9. Success Response
@@ -313,43 +319,47 @@ Tool Call → Server → Tools → AppleScript → Path Navigation → Rename �
 
 ### **🔄 Flow Summary:**
 ```
-Tool Call → Server → Tools → Validate → Process Path → Process Content → Create Note → Parse Result → Return Details
+Tool Call → Server → Tools → Validate → Check Duplicates → Process HTML → Process Path → Create Note → Parse Result → Return Details
 ```
 
 ### **⚡ Key Decision Points:**
 - **Name valid?** → Continue with validation
-- **Path is "Notes"?** → Use simple folder logic
+- **Duplicate exists?** → Return error
+- **Body valid?** → Process HTML content
+- **Path is simple?** → Use simple folder logic
 - **Path is nested?** → Use nested path logic
 - **Path exists?** → Continue with creation
-- **Content valid?** → Process and create
+- **HTML content ready?** → Create note
 - **AppleScript success?** → Return success details
 - **Error occurred?** → Return descriptive error message
 
 ### **🎯 Tool Capabilities:**
 - ✅ Creates notes in root folders and nested paths (up to 5 levels)
-- ✅ Supports all content types: plain text, HTML, Unicode, emojis
-- ✅ Handles rich formatting: headers, bold, italic, lists, links
-- ✅ Supports checklists with checkbox symbols (☐, ☑)
-- ✅ Processes code blocks and URLs automatically
+- ✅ **HTML-First Approach**: User provides HTML-formatted content
+- ✅ **Automatic Title Formatting**: Title wrapped in `<h1>` tags
+- ✅ **No Content Processing**: Direct HTML pass-through to AppleScript
+- ✅ Supports rich formatting: headers, bold, italic, lists, links
+- ✅ Handles Unicode characters and emojis
 - ✅ Validates input and prevents invalid characters
-- ✅ Handles special characters with proper escaping
-- ✅ Allows duplicate note names (multiple notes with same name)
+- ✅ **Prevents duplicate note names** in same folder
 - ✅ Provides detailed creation metadata
-- ✅ Maintains content formatting and structure
+- ✅ Maintains HTML formatting and structure
 
 ### **📋 Content Support:**
-- **Plain Text**: Simple text content with full Unicode support
-- **HTML Formatting**: `<h1>`, `<strong>`, `<em>`, `<ul><li>`, `<br>`
-- **Checklists**: ☐ (unchecked), ☑ (checked), • (bullet)
-- **Code Blocks**: Syntax highlighting support with backticks
-- **URLs**: Automatic detection and clickable links
+- **HTML-First**: User provides complete HTML-formatted content
+- **Automatic Title**: Title automatically wrapped in `<h1>` tags
+- **Rich Formatting**: `<h1>`, `<h2>`, `<h3>`, `<strong>`, `<em>`, `<ul><li>`, `<ol><li>`, `<p>`, `<br>`
+- **Lists**: Ordered and unordered lists with nested items
 - **Emojis & Symbols**: Full Unicode support (🚀, ±, ©, etc.)
-- **Special Characters**: Proper handling with escaping when needed
+- **Special Characters**: HTML entities and special characters
+- **No Processing**: Direct HTML pass-through for maximum flexibility
 
 ### **🔧 Technical Features:**
 - **Input Validation**: Comprehensive validation at multiple levels
+- **Duplicate Detection**: Prevents duplicate note names in same folder
+- **HTML Processing**: Automatic title wrapping and content concatenation
 - **Path Navigation**: Proper handling of nested folder structures
-- **Content Processing**: Rich formatting and special character support
+- **No Content Escaping**: Direct HTML pass-through for clean output
 - **Error Handling**: User-friendly error messages and suggestions
 - **Metadata Tracking**: Creation and modification date capture
 - **Async Operations**: Non-blocking execution for better performance

@@ -18,21 +18,49 @@ async def create_note(ctx: Context, name: str, body: str, folder_path: str = "No
     
     📋 **Content Support:**
     - Plain text, Unicode (emojis 🚀, symbols ±)
-    - HTML formatting: <h1>, <strong>, <em>, <ul><li>
+    - Rich HTML formatting with extensive element support
     - Checklists: ☐ (unchecked), ☑ (checked)
-    - URLs (auto-clickable), Code blocks
-    - Line breaks: Use <br> (not \n)
+    - URLs (auto-clickable), structured data tables
+    - Professional documentation layouts
+    
+    🎨 **HTML Elements - Fully Supported:**
+    - **Headers:** <h1>, <h2>, <h3>, <h4>, <h5>, <h6>
+    - **Text Formatting:** <b>, <strong>, <i>, <em>, <u>, <s>
+    - **Structure:** <p>, <div>, <br>, <blockquote>
+    - **Lists:** <ul><li>, <ol><li> (nested lists supported)
+    - **Tables:** <table><tr><th><td> (excellent for data presentation)
+    - **Links:** <a href="..."> (avoid complex URLs with numbers)
+    
+    ✅ **HTML Best Practices:**
+    - Use semantic HTML structure: headers → paragraphs → lists → tables
+    - Stick to basic tags without complex attributes
+    - Avoid CSS inline styles (use HTML formatting instead)
+    - No numeric attributes (use <table> not <table border="1">)
+    - Perfect for: documentation, reports, newsletters, structured content
     
     📁 **Folder Paths:**
     - Default: "Notes" (root level)
-    - Nested: "Work/Projects" (up to 5 levels)
+    - Nested: "Work/Projects/2024" (up to 5 levels deep)
     - Must exist before creating note
     
-    ⚠️ **Note:** Avoid special characters in name: < > : " | ? *
+    ⚠️ **Limitations:**
+    - Avoid special characters in name: < > : " | ? *
+    - No complex CSS (gradients, flexbox, grid)
+    - No JavaScript or external resources
+    - No form elements (<input>, <textarea>)
+    
+    💡 **Example HTML:**
+    <h1>Project Report</h1>
+    <p>Status: <b>In Progress</b></p>
+    <table>
+      <tr><th>Task</th><th>Status</th></tr>
+      <tr><td>Development</td><td>✅ Complete</td></tr>
+    </table>
+    <ul><li>Next: Testing phase</li></ul>
     
     Args:
         name: Note name (descriptive, avoid special chars)
-        body: Content (supports HTML, Unicode, checklists, URLs)
+        body: Content (supports rich HTML, Unicode, structured data)
         folder_path: Target folder (default: "Notes")
     """
     try:
@@ -122,39 +150,44 @@ async def read_note(ctx: Context, note_name: str, folder_path: str = "Notes") ->
         raise
 
 @mcp.tool()
-async def update_note(ctx: Context, note_name: str, folder_path: str = "Notes", 
-                     new_name: Optional[str] = None, new_body: Optional[str] = None) -> str:
-    """Update an existing note's name and/or content.
+async def update_note(ctx: Context, note_id: str, new_name: Optional[str] = None, new_body: Optional[str] = None) -> str:
+    """Update an existing note by its primary key ID.
     
-    This unified tool handles both simple folders and nested paths.
-    At least one of new_name or new_body must be provided.
+    📋 **Primary Key Based Updates:**
+    - Use the note's primary key ID (e.g., "p1234") from list_notes
+    - If new_name not provided: preserves current note name
+    - If new_body not provided: preserves current note content
+    - If both provided: updates both name and content
+    - If neither provided: no changes made (preserves current values)
     
-    Supported content types for new_body:
-    - Plain text with Unicode support (emojis, symbols)
-    - HTML formatting (headings, bold, italic, lists, links)
-    - Checklists (using checkbox symbols: ☐, ☑, •)
-    - URLs (automatically detected and clickable)
-    - Code blocks (as plain text)
-    - Special characters and symbols
+    🎨 **HTML Content Support:**
+    - **Headers:** <h1>, <h2>, <h3>, <h4>, <h5>, <h6>
+    - **Text Formatting:** <b>, <strong>, <i>, <em>, <u>, <s>
+    - **Structure:** <p>, <div>, <br>, <blockquote>
+    - **Lists:** <ul><li>, <ol><li> (nested lists supported)
+    - **Tables:** <table><tr><th><td> (excellent for data presentation)
+    - **Links:** <a href="..."> (avoid complex URLs with numbers)
     
-    Note: For line breaks and lists, use HTML tags:
-    - Line breaks: Use <br> or <div> tags
-    - Lists: Use <ul><li>item</li></ul> for bullet lists
-    - Plain text \n characters are not preserved in Apple Notes
+    ✅ **Best Practices:**
+    - Use semantic HTML structure: headers → paragraphs → lists → tables
+    - Stick to basic tags without complex attributes
+    - Avoid CSS inline styles (use HTML formatting instead)
+    - No numeric attributes (use <table> not <table border="1">)
+    
+    ⚠️ **Note:** No duplicate name validation - multiple notes can have the same name
     
     Args:
-        note_name: Current name of the note to update
-        folder_path: Folder path where the note is located (default: "Notes")
-        new_name: New name for the note (optional)
-        new_body: New content for the note (supports plain text, HTML, Unicode, URLs) (optional)
+        note_id: Primary key ID of the note to update (e.g., "p1234")
+        new_name: New name for the note (optional - preserves current if not provided)
+        new_body: New content for the note (optional - preserves current if not provided, supports rich HTML)
     """
     try:
-        updated_note = await notes_tools.update_note(note_name, folder_path, new_name, new_body)
+        updated_note = await notes_tools.update_note_by_id(note_id, new_name, new_body)
         
-        # Format the response
+        # Format the response with primary key ID
         result = f"🔄 Note Update Result:\n"
         result += f"📝 Note Name: {updated_note.get('name', 'N/A')}\n"
-        result += f"📂 Folder: {updated_note.get('folder', 'N/A')}\n"
+        result += f"🆔 Note ID: {updated_note.get('note_id', 'N/A')}\n"
         result += f"📅 Creation Date: {updated_note.get('creation_date', 'N/A')}\n"
         result += f"📅 Modification Date: {updated_note.get('modification_date', 'N/A')}\n"
         result += f"✅ Status: {updated_note.get('status', 'N/A')}\n"
@@ -360,6 +393,67 @@ async def list_notes_with_structure(ctx: Context) -> str:
         return f"📁 Apple Notes Structure with Notes:\n\n{notes_structure}"
     except Exception as e:
         await ctx.error(f"Error listing notes structure: {str(e)}")
+        raise
+
+@mcp.tool()
+async def list_notes(ctx: Context, folder_path: str = "Notes") -> str:
+    """List notes with their names and IDs from a specific folder path.
+    
+    This unified tool handles both simple folders and nested paths.
+    
+    Args:
+        folder_path: Folder path to list notes from (e.g., "Work" or "Work/Projects/2024"). Defaults to "Notes".
+    """
+    try:
+        notes_list = await notes_tools.list_notes(folder_path)
+        
+        if not notes_list:
+            return f"No notes found in folder: {folder_path}"
+        
+        # Format the response
+        result = f"📝 Notes in '{folder_path}' ({len(notes_list)} total):\n\n"
+        
+        for i, note in enumerate(notes_list, 1):
+            result += f"{i:3d}. 📄 {note.get('name', 'N/A')}\n"
+            result += f"     🆔 ID: {note.get('note_id', 'N/A')}\n"
+            result += "\n"
+        
+        return result
+        
+    except ValueError as e:
+        error_msg = f"Invalid folder path: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
+    except RuntimeError as e:
+        error_msg = f"Folder not found: {str(e)}"
+        await ctx.error(error_msg)
+        raise RuntimeError(error_msg)
+    except Exception as e:
+        await ctx.error(f"Error listing notes: {str(e)}")
+        raise
+
+@mcp.tool()
+async def list_all_notes(ctx: Context) -> str:
+    """List all notes across all folders with their names and IDs."""
+    try:
+        notes_list = await notes_tools.list_all_notes()
+        
+        if not notes_list:
+            return "No notes found in Apple Notes"
+        
+        # Format the response
+        result = f"📝 All Notes ({len(notes_list)} total):\n\n"
+        
+        for i, note in enumerate(notes_list, 1):
+            result += f"{i:3d}. 📄 {note.get('name', 'N/A')}\n"
+            result += f"     🆔 ID: {note.get('note_id', 'N/A')}\n"
+            result += f"     📂 Folder: {note.get('folder', 'N/A')}\n"
+            result += "\n"
+        
+        return result
+        
+    except Exception as e:
+        await ctx.error(f"Error listing all notes: {str(e)}")
         raise
 
 # Run the server
