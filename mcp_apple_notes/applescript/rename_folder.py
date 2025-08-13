@@ -1,30 +1,41 @@
 from typing import Dict, Any
 from .base_operations import BaseAppleScriptOperations
+from .validation_utils import ValidationUtils
 
 class RenameFolderOperations(BaseAppleScriptOperations):
     """Operations for renaming folders in Apple Notes."""
     
     @staticmethod
+    def _create_applescript_quoted_string(text: str) -> str:
+        """Escape text for safe AppleScript usage."""
+        return ValidationUtils.create_applescript_quoted_string(text)
+    
+    @staticmethod
     async def rename_folder(folder_path: str, current_name: str, new_name: str) -> Dict[str, Any]:
         """Rename a folder in Apple Notes."""
+        # Escape all strings for safe AppleScript usage
+        escaped_folder_path = RenameFolderOperations._create_applescript_quoted_string(folder_path)
+        escaped_current_name = RenameFolderOperations._create_applescript_quoted_string(current_name)
+        escaped_new_name = RenameFolderOperations._create_applescript_quoted_string(new_name)
+        
         script = f'''
 tell application "Notes"
     try
         set targetFolder to missing value
         
         -- Handle root level folder rename (when folder_path is empty or same as current_name)
-        if "{folder_path}" is "" or "{folder_path}" is "{current_name}" then
+        if {escaped_folder_path} is "" or {escaped_folder_path} is {escaped_current_name} then
             repeat with rootFolder in folders
-                if name of rootFolder is "{current_name}" then
-                    set name of rootFolder to "{new_name}"
-                    return {{"success", "{current_name}", "{new_name}", "root"}}
+                if name of rootFolder is {escaped_current_name} then
+                    set name of rootFolder to {escaped_new_name}
+                    return {{"success", {escaped_current_name}, {escaped_new_name}, "root"}}
                 end if
             end repeat
-            return "error:Root folder '{current_name}' not found"
+            return "error:Root folder " & {escaped_current_name} & " not found"
         end if
         
         -- Handle nested folder rename
-        set pathParts to my splitString("{folder_path}", "/")
+        set pathParts to my splitString({escaped_folder_path}, "/")
         set currentFolder to missing value
         
         -- Navigate to the parent folder (the folder_path is the parent)
@@ -63,12 +74,12 @@ tell application "Notes"
         -- Now find and rename the target folder
         if currentFolder is not missing value then
             repeat with targetFolder in folders of currentFolder
-                if name of targetFolder is "{current_name}" then
-                    set name of targetFolder to "{new_name}"
-                    return {{"success", "{current_name}", "{new_name}", "{folder_path}"}}
+                if name of targetFolder is {escaped_current_name} then
+                    set name of targetFolder to {escaped_new_name}
+                    return {{"success", {escaped_current_name}, {escaped_new_name}, {escaped_folder_path}}}
                 end if
             end repeat
-            return "error:Target folder '{current_name}' not found in path '{folder_path}'"
+            return "error:Target folder " & {escaped_current_name} & " not found in path " & {escaped_folder_path}
         else
             return "error:Could not navigate to parent folder"
         end if

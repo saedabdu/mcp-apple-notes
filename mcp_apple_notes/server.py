@@ -11,31 +11,29 @@ mcp = FastMCP(name="mcp-apple-notes")
 notes_tools = NotesTools()
 
 
+
 @mcp.tool()
 async def create_note(ctx: Context, name: str, body: str, folder_path: str = "Notes") -> str:
     """Create a new note with specified name and content.
     
-    This unified tool handles both simple folders and nested paths.
-    The folder path must exist before creating the note.
+    📋 **Content Support:**
+    - Plain text, Unicode (emojis 🚀, symbols ±)
+    - HTML formatting: <h1>, <strong>, <em>, <ul><li>
+    - Checklists: ☐ (unchecked), ☑ (checked)
+    - URLs (auto-clickable), Code blocks
+    - Line breaks: Use <br> (not \n)
     
-    Supported content types for the body:
-    - Plain text with Unicode support (emojis, symbols)
-    - HTML formatting (headings, bold, italic, lists, links)
-    - Checklists (using checkbox symbols: ☐, ☑, •)
-    - URLs (automatically detected and clickable)
-    - Code blocks (as plain text)
-    - Special characters and symbols
+    📁 **Folder Paths:**
+    - Default: "Notes" (root level)
+    - Nested: "Work/Projects" (up to 5 levels)
+    - Must exist before creating note
     
-    Note: For line breaks and lists, use HTML tags:
-    - Line breaks: Use <br> or <div> tags
-    - Lists: Use <ul><li>item</li></ul> for bullet lists
-    - Plain text \n characters are not preserved in Apple Notes
+    ⚠️ **Note:** Avoid special characters in name: < > : " | ? *
     
     Args:
-        name: Name of the note (cannot be empty or contain only whitespace)
-        body: Content of the note (supports plain text, HTML, Unicode, URLs)
-        folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). 
-                    Must exist before creating note. Defaults to "Notes".
+        name: Note name (descriptive, avoid special chars)
+        body: Content (supports HTML, Unicode, checklists, URLs)
+        folder_path: Target folder (default: "Notes")
     """
     try:
         note = await notes_tools.create_note(name, body, folder_path)
@@ -125,8 +123,7 @@ async def read_note(ctx: Context, note_name: str, folder_path: str = "Notes") ->
 
 @mcp.tool()
 async def update_note(ctx: Context, note_name: str, folder_path: str = "Notes", 
-                     new_name: Optional[str] = None, new_body: Optional[str] = None,
-                     note_index: Optional[int] = None) -> str:
+                     new_name: Optional[str] = None, new_body: Optional[str] = None) -> str:
     """Update an existing note's name and/or content.
     
     This unified tool handles both simple folders and nested paths.
@@ -150,10 +147,9 @@ async def update_note(ctx: Context, note_name: str, folder_path: str = "Notes",
         folder_path: Folder path where the note is located (default: "Notes")
         new_name: New name for the note (optional)
         new_body: New content for the note (supports plain text, HTML, Unicode, URLs) (optional)
-        note_index: Index of the note to update if multiple notes have the same name (1-based, optional)
     """
     try:
-        updated_note = await notes_tools.update_note(note_name, folder_path, new_name, new_body, note_index)
+        updated_note = await notes_tools.update_note(note_name, folder_path, new_name, new_body)
         
         # Format the response
         result = f"🔄 Note Update Result:\n"
@@ -309,6 +305,46 @@ async def delete_note(ctx: Context, note_name: str, folder_path: str = "Notes") 
         raise RuntimeError(error_msg)
     except Exception as e:
         await ctx.error(f"Error deleting note: {str(e)}")
+        raise
+
+@mcp.tool()
+async def move_note(ctx: Context, note_name: str, source_folder_path: str, target_folder_path: str) -> str:
+    """Move a note from one folder to another.
+    
+    This unified tool handles both simple folders and nested paths.
+    
+    Args:
+        note_name: Name of the note to move
+        source_folder_path: Current folder path where the note is located
+        target_folder_path: Target folder path where to move the note
+    """
+    try:
+        moved_note = await notes_tools.move_note(note_name, source_folder_path, target_folder_path)
+        
+        # Format the response
+        result = f"📦 Note Move Result:\n"
+        result += f"📝 Note Name: {moved_note.get('name', 'N/A')}\n"
+        result += f"📂 Source Folder: {moved_note.get('source_folder', 'N/A')}\n"
+        result += f"📂 Target Folder: {moved_note.get('target_folder', 'N/A')}\n"
+        result += f"📅 Creation Date: {moved_note.get('creation_date', 'N/A')}\n"
+        result += f"📅 Modification Date: {moved_note.get('modification_date', 'N/A')}\n"
+        result += f"📊 Total Matches: {moved_note.get('total_matches', 'N/A')}\n"
+        result += f"🔢 Note Index: {moved_note.get('note_index', 'N/A')}\n"
+        result += f"✅ Status: {moved_note.get('status', 'N/A')}\n"
+        result += f"💬 Message: {moved_note.get('message', 'N/A')}\n"
+        
+        return result
+        
+    except ValueError as e:
+        error_msg = f"Invalid input: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
+    except RuntimeError as e:
+        error_msg = f"Note not found or path error: {str(e)}"
+        await ctx.error(error_msg)
+        raise RuntimeError(error_msg)
+    except Exception as e:
+        await ctx.error(f"Error moving note: {str(e)}")
         raise
 
 @mcp.tool()

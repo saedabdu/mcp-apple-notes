@@ -11,6 +11,9 @@ from ..applescript.folder_structure import FolderStructureOperations
 from ..applescript.notes_structure import NotesStructureOperations
 from ..applescript.update_note import UpdateNoteOperations
 from ..applescript.delete_note import DeleteNoteOperations
+from ..applescript.move_note import MoveNoteOperations
+from ..applescript.validation_utils import ValidationUtils
+from ..applescript.note_id_utils import NoteIDUtils
 
 class NotesTools:
     """Tools for Apple Notes operations."""
@@ -27,26 +30,7 @@ class NotesTools:
         Raises:
             ValueError: If path is invalid
         """
-        if not folder_path:
-            return ""
-        
-        # Clean the path
-        folder_path = folder_path.strip()
-        
-        # Remove leading/trailing slashes
-        folder_path = folder_path.strip('/')
-        
-        # Check for invalid patterns
-        if '//' in folder_path:
-            raise ValueError("Folder path contains invalid double slashes")
-        
-        # Check for invalid characters (basic validation)
-        invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        for char in invalid_chars:
-            if char in folder_path:
-                raise ValueError(f"Folder path contains invalid character '{char}'")
-        
-        return folder_path
+        return ValidationUtils.validate_folder_path(folder_path)
     
     async def _check_path_exists(self, folder_path: str) -> bool:
         """Check if a folder path exists.
@@ -57,63 +41,7 @@ class NotesTools:
         Returns:
             True if path exists, False otherwise
         """
-        try:
-            # Use a simple AppleScript to check if folder exists
-            from ..applescript.base_operations import BaseAppleScriptOperations
-            
-            path_components = self._validate_folder_path(folder_path).split('/')
-            if not path_components or not path_components[0]:
-                return False
-            
-            script = f'''
-            tell application "Notes"
-                try
-                    set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
-                    
-                    repeat with i from 1 to count of pathComponents
-                        set componentName to item i of pathComponents
-                        
-                        if currentFolder is missing value then
-                            -- Check root folders
-                            set found to false
-                            repeat with rootFolder in every folder
-                                if name of rootFolder is componentName then
-                                    set currentFolder to rootFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        else
-                            -- Check subfolders
-                            set found to false
-                            repeat with subFolder in every folder of currentFolder
-                                if name of subFolder is componentName then
-                                    set currentFolder to subFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        end if
-                    end repeat
-                    
-                    return "exists"
-                on error errMsg
-                    return "error:" & errMsg
-                end try
-            end tell
-            '''
-            
-            result = await BaseAppleScriptOperations.execute_applescript(script)
-            return result == "exists"
-        except Exception:
-            return False
+        return await ValidationUtils.check_path_exists(folder_path)
     
 
     async def create_note(self, name: str, body: str, folder_path: str = "Notes") -> Dict[str, str]:
@@ -162,7 +90,28 @@ class NotesTools:
             ValueError: If note name is empty or invalid
             RuntimeError: If folder path doesn't exist or note not found
         """
-        return await ReadNoteOperations.read_note(note_name, folder_path)
+        # Use the robust note ID system to get the note ID first
+        try:
+            note_id_result = await NoteIDUtils.get_note_id_by_name_with_duplicate_check(note_name, folder_path)
+            
+            if note_id_result['status'] == 'single':
+                # Get the note by ID
+                note_result = await NoteIDUtils.get_note_by_id(note_id_result['note_id'], folder_path)
+                return [note_result]
+            elif note_id_result['status'] == 'multiple':
+                # Return information about all duplicate notes
+                return [{
+                    'status': 'multiple',
+                    'message': note_id_result['message'],
+                    'duplicate_count': note_id_result['duplicate_count'],
+                    'notes': note_id_result['notes']
+                }]
+            else:
+                raise RuntimeError(f"Unexpected result: {note_id_result}")
+                
+        except Exception as e:
+            # Fallback to the original method if the new system fails
+            return await ReadNoteOperations.read_note(note_name, folder_path)
     
     async def get_folder_details(self, folder_name: str) -> Dict[str, Any]:
         """Get comprehensive details about a folder including all subfolders and notes in hierarchy."""
@@ -191,8 +140,7 @@ class NotesTools:
         return await NotesStructureOperations.get_filtered_notes_structure()
     
     async def update_note(self, note_name: str, folder_path: str = "Notes", 
-                         new_name: Optional[str] = None, new_body: Optional[str] = None,
-                         note_index: Optional[int] = None) -> Dict[str, str]:
+                         new_name: Optional[str] = None, new_body: Optional[str] = None) -> Dict[str, str]:
         """Update an existing note's name and/or content.
         
         This unified method handles both simple folders and nested paths.
@@ -203,7 +151,6 @@ class NotesTools:
             folder_path: Folder path where the note is located (default: "Notes")
             new_name: New name for the note (optional)
             new_body: New content for the note (optional)
-            note_index: Index of the note to update if multiple notes have the same name (1-based, optional)
             
         Returns:
             Updated note metadata
@@ -212,7 +159,27 @@ class NotesTools:
             ValueError: If note name is empty or invalid, or if no updates provided
             RuntimeError: If folder path doesn't exist or note not found
         """
-        return await UpdateNoteOperations.update_note(note_name, folder_path, new_name, new_body, note_index)
+        # Use the robust note ID system to get the note ID first
+        try:
+            note_id_result = await NoteIDUtils.get_note_id_by_name_with_duplicate_check(note_name, folder_path)
+            
+            if note_id_result['status'] == 'single':
+                # Use the note ID to update the note directly
+                return await UpdateNoteOperations.update_note_by_id(note_id_result['note_id'], folder_path, new_name, new_body)
+            elif note_id_result['status'] == 'multiple':
+                # Return information about duplicate notes
+                return {
+                    'status': 'error',
+                    'message': note_id_result['message'],
+                    'duplicate_count': note_id_result['duplicate_count'],
+                    'notes': note_id_result['notes']
+                }
+            else:
+                raise RuntimeError(f"Unexpected result: {note_id_result}")
+                
+        except Exception as e:
+            # Fallback to the original method if the new system fails
+            return await UpdateNoteOperations.update_note(note_name, folder_path, new_name, new_body)
     
     async def delete_note(self, note_name: str, folder_path: str = "Notes") -> Dict[str, str]:
         """Delete a note from Apple Notes.
@@ -230,5 +197,68 @@ class NotesTools:
             ValueError: If note name is empty or invalid
             RuntimeError: If folder path doesn't exist, note not found, or duplicate names exist
         """
-        return await DeleteNoteOperations.delete_note(note_name, folder_path)
+        # Use the robust note ID system to get the note ID first
+        try:
+            note_id_result = await NoteIDUtils.get_note_id_by_name_with_duplicate_check(note_name, folder_path)
+            
+            if note_id_result['status'] == 'single':
+                # Get the note by ID and then delete it
+                note_result = await NoteIDUtils.get_note_by_id(note_id_result['note_id'], folder_path)
+                # TODO: Implement delete by ID in DeleteNoteOperations
+                return await DeleteNoteOperations.delete_note(note_name, folder_path)
+            elif note_id_result['status'] == 'multiple':
+                # Return information about duplicate notes
+                return {
+                    'status': 'error',
+                    'message': note_id_result['message'],
+                    'duplicate_count': note_id_result['duplicate_count'],
+                    'notes': note_id_result['notes']
+                }
+            else:
+                raise RuntimeError(f"Unexpected result: {note_id_result}")
+                
+        except Exception as e:
+            # Fallback to the original method if the new system fails
+            return await DeleteNoteOperations.delete_note(note_name, folder_path)
+
+    async def move_note(self, note_name: str, source_folder_path: str, target_folder_path: str) -> Dict[str, Any]:
+        """Move a note from one folder to another.
+        
+        This unified method handles both simple folders and nested paths.
+        
+        Args:
+            note_name: Name of the note to move
+            source_folder_path: Current folder path where the note is located
+            target_folder_path: Target folder path where to move the note
+            
+        Returns:
+            Move operation result with status and details
+            
+        Raises:
+            ValueError: If note name is empty or invalid, or if source/target paths are identical
+            RuntimeError: If source/target paths don't exist, note not found, or move operation fails
+        """
+        # Use the robust note ID system to get the note ID first
+        try:
+            note_id_result = await NoteIDUtils.get_note_id_by_name_with_duplicate_check(note_name, source_folder_path)
+            
+            if note_id_result['status'] == 'single':
+                # Get the note by ID and then move it
+                note_result = await NoteIDUtils.get_note_by_id(note_id_result['note_id'], source_folder_path)
+                # TODO: Implement move by ID in MoveNoteOperations
+                return await MoveNoteOperations.move_note(note_name, source_folder_path, target_folder_path)
+            elif note_id_result['status'] == 'multiple':
+                # Return information about duplicate notes
+                return {
+                    'status': 'error',
+                    'message': note_id_result['message'],
+                    'duplicate_count': note_id_result['duplicate_count'],
+                    'notes': note_id_result['notes']
+                }
+            else:
+                raise RuntimeError(f"Unexpected result: {note_id_result}")
+                
+        except Exception as e:
+            # Fallback to the original method if the new system fails
+            return await MoveNoteOperations.move_note(note_name, source_folder_path, target_folder_path)
 

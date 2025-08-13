@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 from .base_operations import BaseAppleScriptOperations
+from .validation_utils import ValidationUtils
 
 class FolderPathUtils(BaseAppleScriptOperations):
     """Utilities for handling nested folder paths in Apple Notes."""
@@ -11,6 +12,11 @@ class FolderPathUtils(BaseAppleScriptOperations):
             return ["Notes"]  # Default folder
         return [part.strip() for part in folder_path.split('/') if part.strip()]
     
+    @staticmethod
+    def _create_applescript_quoted_string(text: str) -> str:
+        """Escape text for safe AppleScript usage."""
+        return ValidationUtils.create_applescript_quoted_string(text)
+    
 
     
     @staticmethod
@@ -20,11 +26,14 @@ class FolderPathUtils(BaseAppleScriptOperations):
         
         if len(path_components) == 1:
             # Single level - create at root
+            escaped_name = FolderPathUtils._create_applescript_quoted_string(path_components[0])
+            escaped_path = FolderPathUtils._create_applescript_quoted_string(folder_path)
+            
             script = f'''
             tell application "Notes"
                 try
-                    set newFolder to make new folder with properties {{name:"{path_components[0]}"}}
-                    return {{name:(name of newFolder), path:"{folder_path}", created_folders:[{path_components[0]}]}}
+                    set newFolder to make new folder with properties {{name:{escaped_name}}}
+                    return {{name:(name of newFolder), path:{escaped_path}, created_folders:[{escaped_name}]}}
                 on error errMsg
                     return "error:" & errMsg
                 end try
@@ -35,11 +44,16 @@ class FolderPathUtils(BaseAppleScriptOperations):
             parent_components = path_components[:-1]
             final_folder_name = path_components[-1]
             
+            # Escape all strings for safe AppleScript usage
+            escaped_parent_components = [FolderPathUtils._create_applescript_quoted_string(comp) for comp in parent_components]
+            escaped_final_name = FolderPathUtils._create_applescript_quoted_string(final_folder_name)
+            escaped_path = FolderPathUtils._create_applescript_quoted_string(folder_path)
+            
             script = f'''
             tell application "Notes"
                 try
                     set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in parent_components])}}}
+                    set pathComponents to {{{", ".join(escaped_parent_components)}}}
                     
                     -- Navigate to the parent folder
                     repeat with i from 1 to count of pathComponents
@@ -48,7 +62,7 @@ class FolderPathUtils(BaseAppleScriptOperations):
                         if currentFolder is missing value then
                             -- Check root folders
                             set found to false
-                            repeat with rootFolder in every folder
+                            repeat with rootFolder in folders
                                 if name of rootFolder is componentName then
                                     set currentFolder to rootFolder
                                     set found to true
@@ -61,7 +75,7 @@ class FolderPathUtils(BaseAppleScriptOperations):
                         else
                             -- Check subfolders
                             set found to false
-                            repeat with subFolder in every folder of currentFolder
+                            repeat with subFolder in folders of currentFolder
                                 if name of subFolder is componentName then
                                     set currentFolder to subFolder
                                     set found to true
@@ -75,9 +89,9 @@ class FolderPathUtils(BaseAppleScriptOperations):
                     end repeat
                     
                     -- Create the final folder
-                    set newFolder to make new folder at currentFolder with properties {{name:"{final_folder_name}"}}
+                    set newFolder to make new folder at currentFolder with properties {{name:{escaped_final_name}}}
                     
-                    return {{name:(name of newFolder), path:"{folder_path}", created_folders:["{final_folder_name}"]}}
+                    return {{name:(name of newFolder), path:{escaped_path}, created_folders:[{escaped_final_name}]}}
                 on error errMsg
                     return "error:" & errMsg
                 end try

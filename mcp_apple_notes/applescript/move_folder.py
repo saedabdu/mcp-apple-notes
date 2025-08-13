@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from .base_operations import BaseAppleScriptOperations
+from .validation_utils import ValidationUtils
 
 class MoveFolderOperations(BaseAppleScriptOperations):
     """Operations for moving folders in Apple Notes."""
@@ -7,43 +8,12 @@ class MoveFolderOperations(BaseAppleScriptOperations):
     @staticmethod
     def _validate_folder_name(folder_name: str) -> str:
         """Validate and clean folder name."""
-        if not folder_name or not folder_name.strip():
-            raise ValueError("Folder name cannot be empty")
-        
-        # Clean the folder name
-        folder_name = folder_name.strip()
-        
-        # Check for invalid characters (basic validation)
-        invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        for char in invalid_chars:
-            if char in folder_name:
-                raise ValueError(f"Folder name contains invalid character '{char}'")
-        
-        return folder_name
+        return ValidationUtils.validate_folder_name(folder_name)
     
     @staticmethod
     def _validate_folder_path(folder_path: str) -> str:
         """Validate and clean folder path."""
-        if not folder_path:
-            return ""
-        
-        # Clean the path
-        folder_path = folder_path.strip()
-        
-        # Remove leading/trailing slashes
-        folder_path = folder_path.strip('/')
-        
-        # Check for invalid patterns
-        if '//' in folder_path:
-            raise ValueError("Folder path contains invalid double slashes")
-        
-        # Check for invalid characters (basic validation)
-        invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        for char in invalid_chars:
-            if char in folder_path:
-                raise ValueError(f"Folder path contains invalid character '{char}'")
-        
-        return folder_path
+        return ValidationUtils.validate_folder_path(folder_path)
     
     @staticmethod
     def _validate_nesting_depth(source_path: str, target_path: str, folder_name: str) -> None:
@@ -57,108 +27,22 @@ class MoveFolderOperations(BaseAppleScriptOperations):
         Raises:
             ValueError: If the nesting depth would exceed the maximum allowed
         """
-        # Count the depth of the target path
-        target_depth = 0
-        if target_path:
-            target_components = target_path.split('/')
-            target_depth = len([comp for comp in target_components if comp.strip()])
-        
-        # Total depth will be target_depth + 1 (for the moved folder)
-        total_depth = target_depth + 1
-        
-        if total_depth > 5:  # Maximum nesting depth
-            raise ValueError(
-                f"Cannot move folder '{folder_name}' to path '{target_path}'. "
-                f"This would create a nesting depth of {total_depth} levels, "
-                f"which exceeds the maximum allowed depth of 5 levels. "
-                f"Please move the folder to a higher level in the hierarchy."
-            )
+        ValidationUtils.validate_move_operation(source_path, target_path, folder_name)
     
     @staticmethod
     async def _check_folder_exists_at_root(folder_name: str) -> bool:
         """Check if a folder exists at root level."""
-        try:
-            script = f'''
-            tell application "Notes"
-                try
-                    repeat with rootFolder in every folder
-                        if name of rootFolder is "{folder_name}" then
-                            return "exists"
-                        end if
-                    end repeat
-                    return "not_found"
-                on error errMsg
-                    return "error:" & errMsg
-                end try
-            end tell
-            '''
-            
-            result = await MoveFolderOperations.execute_applescript(script)
-            return result == "exists"
-        except Exception:
-            return False
+        return await ValidationUtils.check_folder_exists_at_root(folder_name)
     
     @staticmethod
     async def _check_path_exists(folder_path: str) -> bool:
         """Check if a folder path exists."""
-        try:
-            # Handle root level (empty path) - root level always exists
-            if not folder_path or folder_path.strip() == "":
-                return True
-            
-            path_components = MoveFolderOperations._validate_folder_path(folder_path).split('/')
-            if not path_components or not path_components[0]:
-                return False
-            
-            script = f'''
-            tell application "Notes"
-                try
-                    set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
-                    
-                    repeat with i from 1 to count of pathComponents
-                        set componentName to item i of pathComponents
-                        
-                        if currentFolder is missing value then
-                            -- Check root folders
-                            set found to false
-                            repeat with rootFolder in every folder
-                                if name of rootFolder is componentName then
-                                    set currentFolder to rootFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        else
-                            -- Check subfolders
-                            set found to false
-                            repeat with subFolder in every folder of currentFolder
-                                if name of subFolder is componentName then
-                                    set currentFolder to subFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        end if
-                    end repeat
-                    
-                    return "exists"
-                on error errMsg
-                    return "error:" & errMsg
-                end try
-            end tell
-            '''
-            
-            result = await MoveFolderOperations.execute_applescript(script)
-            return result == "exists"
-        except Exception:
-            return False
+        return await ValidationUtils.check_path_exists(folder_path)
+    
+    @staticmethod
+    def _create_applescript_quoted_string(text: str) -> str:
+        """Escape text for safe AppleScript usage."""
+        return ValidationUtils.create_applescript_quoted_string(text)
     
     @staticmethod
     async def move_folder(source_path: str, folder_name: str, target_path: str = "") -> Dict[str, Any]:
@@ -222,17 +106,68 @@ class MoveFolderOperations(BaseAppleScriptOperations):
     @staticmethod
     async def _move_to_root(source_path: str, folder_name: str) -> Dict[str, Any]:
         """Move a folder to root level."""
+        # Escape strings for safe AppleScript usage
+        escaped_folder_name = MoveFolderOperations._create_applescript_quoted_string(folder_name)
+        escaped_source_path = MoveFolderOperations._create_applescript_quoted_string(source_path)
+        
+        if source_path:
+            # Escape path components for safe AppleScript usage
+            path_components = [comp.strip() for comp in source_path.split('/') if comp.strip()]
+            escaped_components = [MoveFolderOperations._create_applescript_quoted_string(comp) for comp in path_components]
+            escaped_components_str = ", ".join(escaped_components)
+        else:
+            escaped_components_str = ""
+        
         script = f'''
         tell application "Notes"
             try
-                -- Use a simpler approach: move the folder directly by name
-                if "{source_path}" is "" then
+                -- Handle root level moves
+                if {escaped_source_path} is "" then
                     -- Moving from root to root (no-op)
-                    return {{"success", "{folder_name}", "root", "root"}}
+                    return {{"success", {escaped_folder_name}, "root", "root"}}
                 else
-                    -- Moving from path to root
-                    move folder "{folder_name}" of folder "{source_path}" to beginning of folders
-                    return {{"success", "{folder_name}", "{source_path}", "root"}}
+                    -- Moving from path to root - use inline navigation
+                    set pathComponents to {{{escaped_components_str}}}
+                    set currentFolder to missing value
+                    
+                    repeat with i from 1 to count of pathComponents
+                        set componentName to item i of pathComponents
+                        
+                        if currentFolder is missing value then
+                            -- Check root folders
+                            set found to false
+                            repeat with rootFolder in folders
+                                if name of rootFolder is componentName then
+                                    set currentFolder to rootFolder
+                                    set found to true
+                                    exit repeat
+                                end if
+                            end repeat
+                            if not found then
+                                return "error:Cannot navigate to source folder"
+                            end if
+                        else
+                            -- Check subfolders
+                            set found to false
+                            repeat with subFolder in folders of currentFolder
+                                if name of subFolder is componentName then
+                                    set currentFolder to subFolder
+                                    set found to true
+                                    exit repeat
+                                end if
+                            end repeat
+                            if not found then
+                                return "error:Cannot navigate to source folder"
+                            end if
+                        end if
+                    end repeat
+                    
+                    if currentFolder is missing value then
+                        return "error:Cannot navigate to source folder"
+                    end if
+                    
+                    move folder {escaped_folder_name} of currentFolder to beginning of folders
+                    return {{"success", {escaped_folder_name}, {escaped_source_path}, "root"}}
                 end if
                 
             on error errMsg
@@ -269,30 +204,167 @@ class MoveFolderOperations(BaseAppleScriptOperations):
     @staticmethod
     async def _move_to_path(source_path: str, folder_name: str, target_path: str) -> Dict[str, Any]:
         """Move a folder to a specific target path."""
+        # Escape strings for safe AppleScript usage
+        escaped_folder_name = MoveFolderOperations._create_applescript_quoted_string(folder_name)
+        escaped_source_path = MoveFolderOperations._create_applescript_quoted_string(source_path)
+        escaped_target_path = MoveFolderOperations._create_applescript_quoted_string(target_path)
+        
+        # Prepare path components for AppleScript
+        if source_path:
+            source_components = [comp.strip() for comp in source_path.split('/') if comp.strip()]
+            escaped_source_components = [MoveFolderOperations._create_applescript_quoted_string(comp) for comp in source_components]
+            escaped_source_components_str = ", ".join(escaped_source_components)
+        else:
+            escaped_source_components_str = ""
+            
+        if target_path:
+            target_components = [comp.strip() for comp in target_path.split('/') if comp.strip()]
+            escaped_target_components = [MoveFolderOperations._create_applescript_quoted_string(comp) for comp in target_components]
+            escaped_target_components_str = ", ".join(escaped_target_components)
+        else:
+            escaped_target_components_str = ""
+        
         script = f'''
         tell application "Notes"
             try
-                -- Use a simpler approach: move the folder directly by name
-                if "{source_path}" is "" then
+                -- Handle root level moves
+                if {escaped_source_path} is "" then
                     -- Moving from root level
-                    if "{target_path}" is "" then
+                    if {escaped_target_path} is "" then
                         -- Moving to root level (no-op)
-                        return {{"success", "{folder_name}", "root", "root"}}
+                        return {{"success", {escaped_folder_name}, "root", "root"}}
                     else
                         -- Moving from root to target path
-                        move folder "{folder_name}" to folder "{target_path}"
-                        return {{"success", "{folder_name}", "root", "{target_path}"}}
+                        move folder {escaped_folder_name} to folder {escaped_target_path}
+                        return {{"success", {escaped_folder_name}, "root", {escaped_target_path}}}
                     end if
                 else
-                    -- Moving from a path
-                    if "{target_path}" is "" then
+                    -- Moving from a nested path - use inline navigation
+                    if {escaped_target_path} is "" then
                         -- Moving from path to root
-                        move folder "{folder_name}" of folder "{source_path}" to beginning of folders
-                        return {{"success", "{folder_name}", "{source_path}", "root"}}
+                        set sourcePathComponents to {{{escaped_source_components_str}}}
+                        set sourceFolder to missing value
+                        
+                        repeat with i from 1 to count of sourcePathComponents
+                            set componentName to item i of sourcePathComponents
+                            
+                            if sourceFolder is missing value then
+                                -- Check root folders
+                                set found to false
+                                repeat with rootFolder in folders
+                                    if name of rootFolder is componentName then
+                                        set sourceFolder to rootFolder
+                                        set found to true
+                                        exit repeat
+                                    end if
+                                end repeat
+                                if not found then
+                                    return "error:Cannot navigate to source folder"
+                                end if
+                            else
+                                -- Check subfolders
+                                set found to false
+                                repeat with subFolder in folders of sourceFolder
+                                    if name of subFolder is componentName then
+                                        set sourceFolder to subFolder
+                                        set found to true
+                                        exit repeat
+                                    end if
+                                end repeat
+                                if not found then
+                                    return "error:Cannot navigate to source folder"
+                                end if
+                            end if
+                        end repeat
+                        
+                        if sourceFolder is missing value then
+                            return "error:Cannot navigate to source folder"
+                        end if
+                        
+                        move folder {escaped_folder_name} of sourceFolder to beginning of folders
+                        return {{"success", {escaped_folder_name}, {escaped_source_path}, "root"}}
                     else
                         -- Moving from path to path
-                        move folder "{folder_name}" of folder "{source_path}" to folder "{target_path}"
-                        return {{"success", "{folder_name}", "{source_path}", "{target_path}"}}
+                        set sourcePathComponents to {{{escaped_source_components_str}}}
+                        set targetPathComponents to {{{escaped_target_components_str}}}
+                        set sourceFolder to missing value
+                        set targetFolder to missing value
+                        
+                        -- Navigate to source folder
+                        repeat with i from 1 to count of sourcePathComponents
+                            set componentName to item i of sourcePathComponents
+                            
+                            if sourceFolder is missing value then
+                                -- Check root folders
+                                set found to false
+                                repeat with rootFolder in folders
+                                    if name of rootFolder is componentName then
+                                        set sourceFolder to rootFolder
+                                        set found to true
+                                        exit repeat
+                                    end if
+                                end repeat
+                                if not found then
+                                    return "error:Cannot navigate to source folder"
+                                end if
+                            else
+                                -- Check subfolders
+                                set found to false
+                                repeat with subFolder in folders of sourceFolder
+                                    if name of subFolder is componentName then
+                                        set sourceFolder to subFolder
+                                        set found to true
+                                        exit repeat
+                                    end if
+                                end repeat
+                                if not found then
+                                    return "error:Cannot navigate to source folder"
+                                end if
+                            end if
+                        end repeat
+                        
+                        -- Navigate to target folder
+                        repeat with i from 1 to count of targetPathComponents
+                            set componentName to item i of targetPathComponents
+                            
+                            if targetFolder is missing value then
+                                -- Check root folders
+                                set found to false
+                                repeat with rootFolder in folders
+                                    if name of rootFolder is componentName then
+                                        set targetFolder to rootFolder
+                                        set found to true
+                                        exit repeat
+                                    end if
+                                end repeat
+                                if not found then
+                                    return "error:Cannot navigate to target folder"
+                                end if
+                            else
+                                -- Check subfolders
+                                set found to false
+                                repeat with subFolder in folders of targetFolder
+                                    if name of subFolder is componentName then
+                                        set targetFolder to subFolder
+                                        set found to true
+                                        exit repeat
+                                    end if
+                                end repeat
+                                if not found then
+                                    return "error:Cannot navigate to target folder"
+                                end if
+                            end if
+                        end repeat
+                        
+                        if sourceFolder is missing value then
+                            return "error:Cannot navigate to source folder"
+                        end if
+                        if targetFolder is missing value then
+                            return "error:Cannot navigate to target folder"
+                        end if
+                        
+                        move folder {escaped_folder_name} of sourceFolder to targetFolder
+                        return {{"success", {escaped_folder_name}, {escaped_source_path}, {escaped_target_path}}}
                     end if
                 end if
                 

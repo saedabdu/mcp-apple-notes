@@ -1,6 +1,7 @@
 from typing import Dict, Any, List
 from .base_operations import BaseAppleScriptOperations
 from .folder_utils import FolderPathUtils
+from .validation_utils import ValidationUtils
 
 class CreateFolderOperations(BaseAppleScriptOperations):
     """Operations for creating Apple Notes folders."""
@@ -11,43 +12,12 @@ class CreateFolderOperations(BaseAppleScriptOperations):
     @staticmethod
     def _validate_folder_name(folder_name: str) -> str:
         """Validate and clean folder name."""
-        if not folder_name or not folder_name.strip():
-            raise ValueError("Folder name cannot be empty")
-        
-        # Clean the folder name
-        folder_name = folder_name.strip()
-        
-        # Check for invalid characters (basic validation)
-        invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        for char in invalid_chars:
-            if char in folder_name:
-                raise ValueError(f"Folder name contains invalid character '{char}'")
-        
-        return folder_name
+        return ValidationUtils.validate_folder_name(folder_name)
     
     @staticmethod
     def _validate_folder_path(folder_path: str) -> str:
         """Validate and clean folder path."""
-        if not folder_path:
-            return ""
-        
-        # Clean the path
-        folder_path = folder_path.strip()
-        
-        # Remove leading/trailing slashes
-        folder_path = folder_path.strip('/')
-        
-        # Check for invalid patterns
-        if '//' in folder_path:
-            raise ValueError("Folder path contains invalid double slashes")
-        
-        # Check for invalid characters (basic validation)
-        invalid_chars = ['<', '>', ':', '"', '|', '?', '*']
-        for char in invalid_chars:
-            if char in folder_path:
-                raise ValueError(f"Folder path contains invalid character '{char}'")
-        
-        return folder_path
+        return ValidationUtils.validate_folder_path(folder_path)
     
     @staticmethod
     def _validate_nesting_depth(folder_path: str, folder_name: str) -> None:
@@ -60,80 +30,17 @@ class CreateFolderOperations(BaseAppleScriptOperations):
         Raises:
             ValueError: If the nesting depth would exceed the maximum allowed
         """
-        # Count the depth of the existing path
-        path_depth = 0
-        if folder_path:
-            path_components = folder_path.split('/')
-            path_depth = len([comp for comp in path_components if comp.strip()])
-        
-        # Total depth will be path_depth + 1 (for the new folder)
-        total_depth = path_depth + 1
-        
-        if total_depth > CreateFolderOperations.MAX_NESTING_DEPTH:
-            raise ValueError(
-                f"Cannot create folder '{folder_name}' in path '{folder_path}'. "
-                f"This would create a nesting depth of {total_depth} levels, "
-                f"which exceeds the maximum allowed depth of {CreateFolderOperations.MAX_NESTING_DEPTH} levels. "
-                f"Please create the folder at a higher level in the hierarchy."
-            )
+        ValidationUtils.validate_nesting_depth(folder_path, folder_name, "create")
     
     @staticmethod
     async def _check_path_exists(folder_path: str) -> bool:
         """Check if a folder path exists."""
-        try:
-            path_components = CreateFolderOperations._validate_folder_path(folder_path).split('/')
-            if not path_components or not path_components[0]:
-                return False
-            
-            script = f'''
-            tell application "Notes"
-                try
-                    set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
-                    
-                    repeat with i from 1 to count of pathComponents
-                        set componentName to item i of pathComponents
-                        
-                        if currentFolder is missing value then
-                            -- Check root folders
-                            set found to false
-                            repeat with rootFolder in every folder
-                                if name of rootFolder is componentName then
-                                    set currentFolder to rootFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        else
-                            -- Check subfolders
-                            set found to false
-                            repeat with subFolder in every folder of currentFolder
-                                if name of subFolder is componentName then
-                                    set currentFolder to subFolder
-                                    set found to true
-                                    exit repeat
-                                end if
-                            end repeat
-                            if not found then
-                                return "error:Folder not found"
-                            end if
-                        end if
-                    end repeat
-                    
-                    return "exists"
-                on error errMsg
-                    return "error:" & errMsg
-                end try
-            end tell
-            '''
-            
-            result = await CreateFolderOperations.execute_applescript(script)
-            return result == "exists"
-        except Exception:
-            return False
+        return await ValidationUtils.check_path_exists(folder_path)
+    
+    @staticmethod
+    def _create_applescript_quoted_string(text: str) -> str:
+        """Escape text for safe AppleScript usage."""
+        return ValidationUtils.create_applescript_quoted_string(text)
     
     @staticmethod
     async def create_folder(folder_name: str, folder_path: str = "") -> Dict[str, Any]:
@@ -193,10 +100,13 @@ class CreateFolderOperations(BaseAppleScriptOperations):
     @staticmethod
     async def _create_root_folder(folder_name: str) -> Dict[str, str]:
         """Create a new folder in Apple Notes (root level)."""
+        # Escape the folder name for safe AppleScript usage
+        escaped_name = CreateFolderOperations._create_applescript_quoted_string(folder_name)
+        
         script = f'''
         tell application "Notes"
             try
-                set newFolder to make new folder with properties {{name:"{folder_name}"}}
+                set newFolder to make new folder with properties {{name:{escaped_name}}}
                 return {{name:(name of newFolder)}}
             on error errMsg
                 return "error:" & errMsg
@@ -233,11 +143,14 @@ class CreateFolderOperations(BaseAppleScriptOperations):
         
         if len(path_components) == 1:
             # Single level - create at root
+            escaped_name = CreateFolderOperations._create_applescript_quoted_string(path_components[0])
+            escaped_path = CreateFolderOperations._create_applescript_quoted_string(folder_path)
+            
             script = f'''
             tell application "Notes"
                 try
-                    set newFolder to make new folder with properties {{name:"{path_components[0]}"}}
-                    return {{name:(name of newFolder), path:"{folder_path}", created_folders:[{path_components[0]}]}}
+                    set newFolder to make new folder with properties {{name:{escaped_name}}}
+                    return {{name:(name of newFolder), path:{escaped_path}, created_folders:[{escaped_name}]}}
                 on error errMsg
                     return "error:" & errMsg
                 end try
@@ -248,11 +161,16 @@ class CreateFolderOperations(BaseAppleScriptOperations):
             parent_components = path_components[:-1]
             final_folder_name = path_components[-1]
             
+            # Escape all strings for safe AppleScript usage
+            escaped_parent_components = [CreateFolderOperations._create_applescript_quoted_string(comp) for comp in parent_components]
+            escaped_final_name = CreateFolderOperations._create_applescript_quoted_string(final_folder_name)
+            escaped_path = CreateFolderOperations._create_applescript_quoted_string(folder_path)
+            
             script = f'''
             tell application "Notes"
                 try
                     set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in parent_components])}}}
+                    set pathComponents to {{{", ".join(escaped_parent_components)}}}
                     
                     -- Navigate to the parent folder
                     repeat with i from 1 to count of pathComponents
@@ -261,7 +179,7 @@ class CreateFolderOperations(BaseAppleScriptOperations):
                         if currentFolder is missing value then
                             -- Check root folders
                             set found to false
-                            repeat with rootFolder in every folder
+                            repeat with rootFolder in folders
                                 if name of rootFolder is componentName then
                                     set currentFolder to rootFolder
                                     set found to true
@@ -274,7 +192,7 @@ class CreateFolderOperations(BaseAppleScriptOperations):
                         else
                             -- Check subfolders
                             set found to false
-                            repeat with subFolder in every folder of currentFolder
+                            repeat with subFolder in folders of currentFolder
                                 if name of subFolder is componentName then
                                     set currentFolder to subFolder
                                     set found to true
@@ -288,9 +206,9 @@ class CreateFolderOperations(BaseAppleScriptOperations):
                     end repeat
                     
                     -- Create the final folder
-                    set newFolder to make new folder at currentFolder with properties {{name:"{final_folder_name}"}}
+                    set newFolder to make new folder at currentFolder with properties {{name:{escaped_final_name}}}
                     
-                    return {{name:(name of newFolder), path:"{folder_path}", created_folders:["{final_folder_name}"]}}
+                    return {{name:(name of newFolder), path:{escaped_path}, created_folders:[{escaped_final_name}]}}
                 on error errMsg
                     return "error:" & errMsg
                 end try
