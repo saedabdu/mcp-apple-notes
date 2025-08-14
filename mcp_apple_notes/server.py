@@ -128,11 +128,7 @@ async def read_note(
         result = f"Note Content:\n"
         result += f"Note Name: {note_data.get('name', 'N/A')}\n"
         result += f"Note ID: {note_data.get('note_id', 'N/A')}\n"
-        result += f"Folder: {note_data.get('folder', 'N/A')}\n"
-        result += f"Creation Date: {note_data.get('creation_date', 'N/A')}\n"
-        result += f"Modification Date: {note_data.get('modification_date', 'N/A')}\n"
-        result += f"Status: {note_data.get('status', 'N/A')}\n"
-        result += f"Read Method: {note_data.get('read_method', 'by_id')}\n\n"
+        result += f"Folder: {note_data.get('folder', 'N/A')}\n\n"
         result += f"Full Content:\n{note_data.get('body', 'No content available')}\n"
         
         return result
@@ -187,8 +183,6 @@ async def update_note(
         result = f"Note Update Result:\n"
         result += f"Note Name: {updated_note.get('name', 'N/A')}\n"
         result += f"Note ID: {updated_note.get('note_id', 'N/A')}\n"
-        result += f"Creation Date: {updated_note.get('creation_date', 'N/A')}\n"
-        result += f"Modification Date: {updated_note.get('modification_date', 'N/A')}\n"
         result += f"Status: {updated_note.get('status', 'N/A')}\n"
         
         return result
@@ -370,11 +364,7 @@ async def delete_note(
         result = f"Note Deletion Result:\n"
         result += f"Note Name: {deleted_note.get('name', 'N/A')}\n"
         result += f"Note ID: {deleted_note.get('note_id', 'N/A')}\n"
-        result += f"Folder: {deleted_note.get('folder', 'N/A')}\n"
-        result += f"Creation Date: {deleted_note.get('creation_date', 'N/A')}\n"
-        result += f"Modification Date: {deleted_note.get('modification_date', 'N/A')}\n"
         result += f"Status: {deleted_note.get('status', 'N/A')}\n"
-        result += f"Deletion Method: by_id\n"
         
         return result
         
@@ -388,6 +378,34 @@ async def delete_note(
         raise RuntimeError(error_msg)
     except Exception as e:
         await ctx.error(f"Error deleting note: {str(e)}")
+        raise
+
+@mcp.tool()
+async def delete_folder(
+    ctx: Context,
+    folder_name: str = Field(..., description="Name of the folder to delete"),
+    folder_path: str = Field(default="", description="Path where the folder is located (empty for root level)")
+) -> str:
+    """Delete a folder in Apple Notes.
+    
+    Args:
+        folder_name: Name of the folder to delete
+        folder_path: Path where the folder is located (empty for root level)
+    """
+    try:
+        delete_result = await notes_tools.delete_folder(folder_name, folder_path)
+        
+        # Format the response
+        result = f"Folder Delete Result:\n"
+        result += f"Folder Name: {delete_result.get('folder_name', 'N/A')}\n"
+        result += f"Path: {delete_result.get('folder_path', 'N/A')}\n"
+        result += f"Status: {delete_result.get('status', 'N/A')}\n"
+        result += f"Message: {delete_result.get('message', 'N/A')}\n"
+        
+        return result
+        
+    except Exception as e:
+        await ctx.error(f"Error deleting folder: {str(e)}")
         raise
 
 
@@ -633,6 +651,65 @@ async def list_folder_contents(
         raise RuntimeError(error_msg)
     except Exception as e:
         await ctx.error(f"Error listing folder contents: {str(e)}")
+        raise
+
+@mcp.tool()
+async def search_notes(
+    ctx: Context,
+    keywords: str = Field(..., description="Comma-separated keywords to search for in note content")
+) -> str:
+    """Search for notes containing the specified keywords.
+    
+    **Features:**
+    - Searches through all notes in Apple Notes
+    - Finds notes containing any of the specified keywords
+    - Case-insensitive search in note content
+    - Returns note details with matched keywords
+    
+    **Output Format:**
+    - Numbered list of matching notes
+    - Note names, IDs, and folder locations
+    - Matched keywords for each note
+    
+    Args:
+        keywords: Comma-separated keywords to search for (e.g., "AI, machine learning, Tesla")
+    """
+    try:
+        # Parse keywords from comma-separated string
+        keyword_list = [kw.strip() for kw in keywords.split(',') if kw.strip()]
+        
+        if not keyword_list:
+            return "No valid keywords provided. Please provide comma-separated keywords."
+        
+        # Search for notes
+        search_results = await notes_tools.search_notes(keyword_list)
+        
+        if not search_results:
+            return f"No notes found containing the keywords: {', '.join(keyword_list)}"
+        
+        # Format the response
+        result = f"Search Results ({len(search_results)} notes found):\n\n"
+        result += f"Keywords searched: {', '.join(keyword_list)}\n\n"
+        
+        for i, note in enumerate(search_results, 1):
+            result += f"{i:3d}. {note.get('name', 'N/A')}\n"
+            result += f"     ID: {note.get('note_id', 'N/A')}\n"
+            result += f"     Folder: {note.get('folder', 'N/A')}\n"
+            result += f"     Matched: {note.get('matched_keyword', 'N/A')}\n"
+            result += "\n"
+        
+        return result
+        
+    except ValueError as e:
+        error_msg = f"Invalid search input: {str(e)}"
+        await ctx.error(error_msg)
+        raise ValueError(error_msg)
+    except RuntimeError as e:
+        error_msg = f"Search failed: {str(e)}"
+        await ctx.error(error_msg)
+        raise RuntimeError(error_msg)
+    except Exception as e:
+        await ctx.error(f"Error searching notes: {str(e)}")
         raise
 
 # Run the server

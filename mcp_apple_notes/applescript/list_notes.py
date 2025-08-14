@@ -238,31 +238,21 @@ class ListNotesOperations(BaseAppleScriptOperations):
             try
                 set allNotesList to {}
                 
-                -- Get all folders recursively
-                set allFolders to {}
-                
-                -- Add root folders
-                repeat with rootFolder in folders
-                    set end of allFolders to rootFolder
+                repeat with currentNote in every note
+                    set noteName to name of currentNote
+                    set noteID to id of currentNote
                     
-                    -- Add subfolders recursively
-                    set subFolders to folders of rootFolder
-                    repeat with subFolder in subFolders
-                        set end of allFolders to subFolder
-                    end repeat
-                end repeat
-                
-                -- Get notes from each folder
-                repeat with currentFolder in allFolders
-                    set folderName to name of currentFolder
+                    -- Get the folder name for this note
+                    set noteFolder to "Unknown"
+                    try
+                        set noteFolder to name of container of currentNote
+                    on error
+                        set noteFolder to "Notes"
+                    end try
                     
-                    repeat with theNote in notes of currentFolder
-                        set noteId to id of theNote as string
-                        set noteName to name of theNote as string
-                        copy noteId to end of allNotesList
-                        copy noteName to end of allNotesList
-                        copy folderName to end of allNotesList
-                    end repeat
+                    copy noteID to end of allNotesList
+                    copy noteName to end of allNotesList
+                    copy noteFolder to end of allNotesList
                 end repeat
                 
                 return allNotesList

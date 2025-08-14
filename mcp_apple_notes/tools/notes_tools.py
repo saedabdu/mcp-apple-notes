@@ -203,3 +203,34 @@ class NotesTools:
             RuntimeError: If note not found, paths don't exist, or move fails
         """
         return await MoveNoteOperations.move_note(note_id, source_folder_path, target_folder_path)
+
+    async def delete_folder(self, folder_name: str, folder_path: str = "") -> Dict[str, Any]:
+        """Delete a folder in Apple Notes.
+        
+        Args:
+            folder_name: Name of the folder to delete
+            folder_path: Path where the folder is located (empty for root level)
+        """
+        # Import the delete folder operations
+        from ..applescript.delete_folder import DeleteFolderOperations
+        return await DeleteFolderOperations.delete_folder(folder_name, folder_path)
+
+    async def search_notes(self, keywords: List[str]) -> List[Dict[str, str]]:
+        """Search for notes containing the specified keywords.
+        
+        This method searches through all notes in Apple Notes to find those
+        containing any of the specified keywords in their content.
+        
+        Args:
+            keywords: List of keywords to search for
+            
+        Returns:
+            List of dictionaries with note_id, name, folder, and matched_keyword
+            
+        Raises:
+            ValueError: If keywords list is empty or invalid
+            RuntimeError: If search operation fails
+        """
+        # Import the search notes operations
+        from ..applescript.search_notes import SearchNotesOperations
+        return await SearchNotesOperations.search_notes(keywords)
