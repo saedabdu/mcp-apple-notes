@@ -192,17 +192,17 @@ end tell
                         note_name = line.replace('├── Note:', '').strip()
                         # Determine indentation level based on the original line
                         if line.startswith('  ├── Note:'):
-                            formatted_line = f"├── 📝 {note_name}"
+                            formatted_line = f"├── {note_name}"
                         elif line.startswith('    ├── Note:'):
-                            formatted_line = f"│   ├── 📝 {note_name}"
+                            formatted_line = f"│   ├── {note_name}"
                         elif line.startswith('      ├── Note:'):
-                            formatted_line = f"│   │   ├── 📝 {note_name}"
+                            formatted_line = f"│   │   ├── {note_name}"
                         elif line.startswith('        ├── Note:'):
-                            formatted_line = f"│   │   │   ├── 📝 {note_name}"
+                            formatted_line = f"│   │   │   ├── {note_name}"
                         elif line.startswith('          ├── Note:'):
-                            formatted_line = f"│   │   │   │   ├── 📝 {note_name}"
+                            formatted_line = f"│   │   │   │   ├── {note_name}"
                         else:
-                            formatted_line = f"├── 📝 {note_name}"
+                            formatted_line = f"├── {note_name}"
                         filtered_lines.append(formatted_line)
                     else:
                         filtered_lines.append(line)

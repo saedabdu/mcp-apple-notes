@@ -125,15 +125,15 @@ async def read_note(
         note_data = await notes_tools.read_note(note_id, folder_path)
         
         # Format the response
-        result = f"📝 Note Content:\n"
-        result += f"📄 Note Name: {note_data.get('name', 'N/A')}\n"
-        result += f"🆔 Note ID: {note_data.get('note_id', 'N/A')}\n"
-        result += f"📂 Folder: {note_data.get('folder', 'N/A')}\n"
-        result += f"📅 Creation Date: {note_data.get('creation_date', 'N/A')}\n"
-        result += f"📅 Modification Date: {note_data.get('modification_date', 'N/A')}\n"
-        result += f"✅ Status: {note_data.get('status', 'N/A')}\n"
-        result += f"🔧 Read Method: {note_data.get('read_method', 'by_id')}\n\n"
-        result += f"📄 Full Content:\n{note_data.get('body', 'No content available')}\n"
+        result = f"Note Content:\n"
+        result += f"Note Name: {note_data.get('name', 'N/A')}\n"
+        result += f"Note ID: {note_data.get('note_id', 'N/A')}\n"
+        result += f"Folder: {note_data.get('folder', 'N/A')}\n"
+        result += f"Creation Date: {note_data.get('creation_date', 'N/A')}\n"
+        result += f"Modification Date: {note_data.get('modification_date', 'N/A')}\n"
+        result += f"Status: {note_data.get('status', 'N/A')}\n"
+        result += f"Read Method: {note_data.get('read_method', 'by_id')}\n\n"
+        result += f"Full Content:\n{note_data.get('body', 'No content available')}\n"
         
         return result
         
@@ -184,12 +184,12 @@ async def update_note(
         updated_note = await notes_tools.update_note(note_id, combined_content)
         
         # Format the response with primary key ID
-        result = f"🔄 Note Update Result:\n"
-        result += f"📝 Note Name: {updated_note.get('name', 'N/A')}\n"
-        result += f"🆔 Note ID: {updated_note.get('note_id', 'N/A')}\n"
-        result += f"📅 Creation Date: {updated_note.get('creation_date', 'N/A')}\n"
-        result += f"📅 Modification Date: {updated_note.get('modification_date', 'N/A')}\n"
-        result += f"✅ Status: {updated_note.get('status', 'N/A')}\n"
+        result = f"Note Update Result:\n"
+        result += f"Note Name: {updated_note.get('name', 'N/A')}\n"
+        result += f"Note ID: {updated_note.get('note_id', 'N/A')}\n"
+        result += f"Creation Date: {updated_note.get('creation_date', 'N/A')}\n"
+        result += f"Modification Date: {updated_note.get('modification_date', 'N/A')}\n"
+        result += f"Status: {updated_note.get('status', 'N/A')}\n"
         
         return result
         
@@ -237,12 +237,12 @@ async def rename_folder(
         rename_result = await notes_tools.rename_folder(folder_path, current_name, new_name)
         
         # Format the response
-        result = f"🔄 Folder Rename Result:\n"
-        result += f"📂 Path: {rename_result.get('folder_path', 'N/A')}\n"
-        result += f"📝 Old Name: {rename_result.get('current_name', 'N/A')}\n"
-        result += f"📝 New Name: {rename_result.get('new_name', 'N/A')}\n"
-        result += f"✅ Status: {rename_result.get('status', 'N/A')}\n"
-        result += f"💬 Message: {rename_result.get('message', 'N/A')}\n"
+        result = f"Folder Rename Result:\n"
+        result += f"Path: {rename_result.get('folder_path', 'N/A')}\n"
+        result += f"Old Name: {rename_result.get('current_name', 'N/A')}\n"
+        result += f"New Name: {rename_result.get('new_name', 'N/A')}\n"
+        result += f"Status: {rename_result.get('status', 'N/A')}\n"
+        result += f"Message: {rename_result.get('message', 'N/A')}\n"
         
         return result
     except ValueError as e:
@@ -289,12 +289,12 @@ async def move_folder(
         move_result = await notes_tools.move_folder(source_path, folder_name, target_path)
         
         # Format the response
-        result = f"📦 Folder Move Result:\n"
-        result += f"📁 Folder Name: {move_result.get('folder_name', 'N/A')}\n"
-        result += f"📂 Source Path: {move_result.get('source_path', 'N/A')}\n"
-        result += f"📂 Target Path: {move_result.get('target_path', 'N/A')}\n"
-        result += f"✅ Status: {move_result.get('status', 'N/A')}\n"
-        result += f"💬 Message: {move_result.get('message', 'N/A')}\n"
+        result = f"Folder Move Result:\n"
+        result += f"Folder Name: {move_result.get('folder_name', 'N/A')}\n"
+        result += f"Source Path: {move_result.get('source_path', 'N/A')}\n"
+        result += f"Target Path: {move_result.get('target_path', 'N/A')}\n"
+        result += f"Status: {move_result.get('status', 'N/A')}\n"
+        result += f"Message: {move_result.get('message', 'N/A')}\n"
         
         return result
     except ValueError as e:
@@ -337,7 +337,7 @@ async def list_folder_with_structure(ctx: Context) -> str:
             return "No folders found in Apple Notes"
         
         # Return filtered AppleScript result
-        return f"📁 Apple Notes Folder Structure:\n\n{folder_structure}"
+        return f"Apple Notes Folder Structure:\n\n{folder_structure}"
     except Exception as e:
         await ctx.error(f"Error listing folder structure: {str(e)}")
         raise
@@ -367,14 +367,14 @@ async def delete_note(
         deleted_note = await notes_tools.delete_note(note_id, folder_path)
         
         # Format the response
-        result = f"🗑️ Note Deletion Result:\n"
-        result += f"📝 Note Name: {deleted_note.get('name', 'N/A')}\n"
-        result += f"🆔 Note ID: {deleted_note.get('note_id', 'N/A')}\n"
-        result += f"📂 Folder: {deleted_note.get('folder', 'N/A')}\n"
-        result += f"📅 Creation Date: {deleted_note.get('creation_date', 'N/A')}\n"
-        result += f"📅 Modification Date: {deleted_note.get('modification_date', 'N/A')}\n"
-        result += f"✅ Status: {deleted_note.get('status', 'N/A')}\n"
-        result += f"🔧 Deletion Method: by_id\n"
+        result = f"Note Deletion Result:\n"
+        result += f"Note Name: {deleted_note.get('name', 'N/A')}\n"
+        result += f"Note ID: {deleted_note.get('note_id', 'N/A')}\n"
+        result += f"Folder: {deleted_note.get('folder', 'N/A')}\n"
+        result += f"Creation Date: {deleted_note.get('creation_date', 'N/A')}\n"
+        result += f"Modification Date: {deleted_note.get('modification_date', 'N/A')}\n"
+        result += f"Status: {deleted_note.get('status', 'N/A')}\n"
+        result += f"Deletion Method: by_id\n"
         
         return result
         
@@ -417,7 +417,7 @@ async def list_notes_with_structure(ctx: Context) -> str:
             return "No folders or notes found in Apple Notes"
         
         # Return filtered AppleScript result
-        return f"📁 Apple Notes Structure with Notes:\n\n{notes_structure}"
+        return f"Apple Notes Structure with Notes:\n\n{notes_structure}"
     except Exception as e:
         await ctx.error(f"Error listing notes structure: {str(e)}")
         raise
@@ -450,11 +450,11 @@ async def list_notes(
             return f"No notes found in folder: {folder_path}"
         
         # Format the response
-        result = f"📝 Notes in '{folder_path}' ({len(notes_list)} total):\n\n"
+        result = f"Notes in '{folder_path}' ({len(notes_list)} total):\n\n"
         
         for i, note in enumerate(notes_list, 1):
-            result += f"{i:3d}. 📄 {note.get('name', 'N/A')}\n"
-            result += f"     🆔 ID: {note.get('note_id', 'N/A')}\n"
+            result += f"{i:3d}. {note.get('name', 'N/A')}\n"
+            result += f"     ID: {note.get('note_id', 'N/A')}\n"
             result += "\n"
         
         return result
@@ -497,12 +497,12 @@ async def list_all_notes(ctx: Context) -> str:
             return "No notes found in Apple Notes"
         
         # Format the response
-        result = f"📝 All Notes ({len(notes_list)} total):\n\n"
+        result = f"All Notes ({len(notes_list)} total):\n\n"
         
         for i, note in enumerate(notes_list, 1):
-            result += f"{i:3d}. 📄 {note.get('name', 'N/A')}\n"
-            result += f"     🆔 ID: {note.get('note_id', 'N/A')}\n"
-            result += f"     📂 Folder: {note.get('folder', 'N/A')}\n"
+            result += f"{i:3d}. {note.get('name', 'N/A')}\n"
+            result += f"     ID: {note.get('note_id', 'N/A')}\n"
+            result += f"     Folder: {note.get('folder', 'N/A')}\n"
             result += "\n"
         
         return result
@@ -547,13 +547,13 @@ async def move_note(
         move_result = await notes_tools.move_note(note_id, source_folder_path, target_folder_path)
         
         # Format the response
-        result = f"📦 Note Move Result:\n"
-        result += f"📝 Note Name: {move_result.get('name', 'N/A')}\n"
-        result += f"🆔 Note ID: {move_result.get('note_id', 'N/A')}\n"
-        result += f"📂 Source Folder: {move_result.get('source_folder', 'N/A')}\n"
-        result += f"📂 Target Folder: {move_result.get('target_folder', 'N/A')}\n"
-        result += f"✅ Status: {move_result.get('status', 'N/A')}\n"
-        result += f"💬 Message: {move_result.get('message', 'N/A')}\n"
+        result = f"Note Move Result:\n"
+        result += f"Note Name: {move_result.get('name', 'N/A')}\n"
+        result += f"Note ID: {move_result.get('note_id', 'N/A')}\n"
+        result += f"Source Folder: {move_result.get('source_folder', 'N/A')}\n"
+        result += f"Target Folder: {move_result.get('target_folder', 'N/A')}\n"
+        result += f"Status: {move_result.get('status', 'N/A')}\n"
+        result += f"Message: {move_result.get('message', 'N/A')}\n"
         
         return result
     except ValueError as e:
@@ -596,30 +596,30 @@ async def list_folder_contents(
         folder_contents = await notes_tools.list_folder_contents(folder_path)
         
         # Format the response
-        result = f"📁 Folder Contents: '{folder_path}'\n\n"
-        result += f"📊 Summary:\n"
-        result += f"   📝 Notes: {folder_contents.get('notes_count', 0)}\n"
-        result += f"   📁 Folders: {folder_contents.get('folders_count', 0)}\n\n"
+        result = f"Folder Contents: '{folder_path}'\n\n"
+        result += f"Summary:\n"
+        result += f"   Notes: {folder_contents.get('notes_count', 0)}\n"
+        result += f"   Folders: {folder_contents.get('folders_count', 0)}\n\n"
         
         # List notes
         notes = folder_contents.get('notes', [])
         if notes:
-            result += f"📝 Notes ({len(notes)}):\n"
+            result += f"Notes ({len(notes)}):\n"
             for i, note in enumerate(notes, 1):
-                result += f"   {i:2d}. 📄 {note.get('name', 'N/A')}\n"
-                result += f"       🆔 ID: {note.get('note_id', 'N/A')}\n"
+                result += f"   {i:2d}. {note.get('name', 'N/A')}\n"
+                result += f"       ID: {note.get('note_id', 'N/A')}\n"
             result += "\n"
         
         # List folders
         folders = folder_contents.get('folders', [])
         if folders:
-            result += f"📁 Direct Child Folders ({len(folders)}):\n"
+            result += f"Direct Child Folders ({len(folders)}):\n"
             for i, folder in enumerate(folders, 1):
-                result += f"   {i:2d}. 📁 {folder.get('name', 'N/A')}\n"
+                result += f"   {i:2d}. {folder.get('name', 'N/A')}\n"
             result += "\n"
         
         if not notes and not folders:
-            result += "📭 This folder is empty (no notes or folders).\n"
+            result += "This folder is empty (no notes or folders).\n"
         
         return result
         
