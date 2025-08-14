@@ -7,17 +7,16 @@
 2. ✅ `read_note`
 3. ✅ `update_note`
 4. ✅ `delete_note`
-5. ✅ `list_notes`
-6. ✅ `list_all_notes`
-7. ✅ `list_notes_with_structure`
+5. ✅ `move_note`
+6. ✅ `list_notes`
+7. ✅ `list_all_notes`
+8. ✅ `list_notes_with_structure`
 
-### **Folder Operations (6 tools)**
-6. ✅✅ `list_folder_with_structure`
-7. ✅✅ `create_folder`
-8. ✅ `get_folder_details`
-9. ✅✅ `rename_folder`
-10. ✅✅ `move_folder`
-11. ✅ `move_note`
+### **Folder Operations (4 tools)**
+8. ✅✅ `list_folder_with_structure`
+9. ✅✅ `create_folder`
+10. ✅✅ `rename_folder`
+11. ✅✅ `move_folder`
 
 ## **🔄 Planned Tools (12 total)**
 
@@ -46,8 +45,8 @@
 14. `move_note_to_folder` Already done as Move Folder
 
 ## **📊 Implementation Progress**
-- **✅ Completed**: 14 tools (54%)
-- **🔄 Planned**: 12 tools (46%)
+- **✅ Completed**: 13 tools (50%)
+- **🔄 Planned**: 13 tools (50%)
 - **📈 Total**: 26 tools
 
 ## **Legend**

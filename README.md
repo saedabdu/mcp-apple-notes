@@ -234,11 +234,12 @@ await create_note("Test", "Line 1<br>Line 2<br>Line 3")
 | `list_notes_with_structure` | List complete folder structure with notes included | None |
 | `list_folder_with_structure` | List complete folder structure | None |
 | `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string, supports HTML/Unicode/URLs), `folder_path` (string, optional, default: "Notes") |
-| `read_note` | Read notes by name and path (unified - handles simple and nested paths) | `note_name` (string), `folder_path` (string, optional, default: "Notes") |
-| `update_note` | Update note content and metadata with duplicate validation | `note_name` (string), `folder_path` (string, optional, default: "Notes"), `new_name` (string, optional), `new_body` (string, supports HTML/Unicode/URLs, optional), `note_index` (integer, optional) |
-| `delete_note` | Delete notes with duplicate handling | `note_name` (string), `folder_path` (string, optional, default: "Notes") |
+| `read_note` | Read note by ID with folder verification | `note_id` (string, e.g., "p1308"), `folder_path` (string, optional, default: "Notes") |
+| `update_note` | Update note by ID with HTML content | `note_id` (string, e.g., "p1308"), `new_name` (string, HTML title), `new_body` (string, HTML content) |
+| `delete_note` | Delete note by ID with folder verification | `note_id` (string, e.g., "p1308"), `folder_path` (string, optional, default: "Notes") |
+| `move_note` | Move note between folders with validation | `note_id` (string, e.g., "p1308"), `source_folder_path` (string), `target_folder_path` (string) |
 | `create_folder` | Create folder with optional path | `folder_name` (string), `folder_path` (string, optional) |
-| `get_folder_details` | Get comprehensive folder details | `folder_name` (string) |
+
 | `rename_folder` | Rename folder with path support | `folder_path` (string), `current_name` (string), `new_name` (string) |
 | `move_folder` | Move folder between locations | `source_path` (string), `folder_name` (string), `target_path` (string, optional) |
 

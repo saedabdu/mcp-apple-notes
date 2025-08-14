@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from .base_operations import BaseAppleScriptOperations
-from .folder_utils import FolderPathUtils
+
 from .validation_utils import ValidationUtils
 from .note_id_utils import NoteIDUtils
 
@@ -53,7 +53,6 @@ class ListNotesOperations(BaseAppleScriptOperations):
         
         except Exception as e:
             # If parsing fails, return empty list
-            print(f"Warning: Failed to parse notes list: {e}")
             return []
         
         return notes
@@ -99,7 +98,6 @@ class ListNotesOperations(BaseAppleScriptOperations):
         
         except Exception as e:
             # If parsing fails, return empty list
-            print(f"Warning: Failed to parse all notes list: {e}")
             return []
         
         return notes
@@ -171,7 +169,7 @@ class ListNotesOperations(BaseAppleScriptOperations):
             raise RuntimeError(f"Folder path '{folder_path}' does not exist.")
         
         # Parse the path components
-        path_components = FolderPathUtils.parse_folder_path(folder_path)
+        path_components = ValidationUtils.parse_folder_path(folder_path)
         
         script = f'''
         tell application "Notes"

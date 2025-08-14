@@ -28,6 +28,10 @@ class ValidationUtils(BaseAppleScriptOperations):
         # Clean the name
         folder_name = folder_name.strip()
         
+        # Check length limit (same as create_folder uses)
+        if len(folder_name) > 128:
+            raise ValueError(f"Folder name exceeds maximum length of 128 characters (current: {len(folder_name)} characters)")
+        
         # Check for invalid characters
         for char in ValidationUtils.INVALID_CHARS:
             if char in folder_name:
@@ -125,6 +129,57 @@ class ValidationUtils(BaseAppleScriptOperations):
         if body is None:
             body = ""
         return str(body)
+
+    @staticmethod
+    def extract_title_from_html(html_content: str) -> str:
+        """Extract title text from HTML content that may contain <h1> tags.
+        
+        Args:
+            html_content: HTML content that may contain <h1>title</h1>
+            
+        Returns:
+            Extracted title text (empty string if no title found)
+        """
+        if not html_content:
+            return ""
+        
+        # Simple regex to extract content from <h1> tags
+        import re
+        
+        # Look for <h1>content</h1> pattern (case insensitive)
+        h1_match = re.search(r'<h1[^>]*>(.*?)</h1>', html_content, re.IGNORECASE | re.DOTALL)
+        if h1_match:
+            title_content = h1_match.group(1).strip()
+            # Remove any other HTML tags from title content
+            title_content = re.sub(r'<[^>]+>', '', title_content).strip()
+            return title_content
+        
+        return ""
+
+    @staticmethod
+    def validate_html_title_content(html_content: str) -> str:
+        """Validate that HTML content contains a non-empty title.
+        
+        Args:
+            html_content: HTML content that should contain a valid <h1> title
+            
+        Returns:
+            Original HTML content if valid
+            
+        Raises:
+            ValueError: If title is empty, contains only whitespace, or is missing
+        """
+        if not html_content:
+            raise ValueError("Content cannot be empty")
+        
+        # Extract title from HTML
+        title_text = ValidationUtils.extract_title_from_html(html_content)
+        
+        # Check if title is empty or whitespace only
+        if not title_text or not title_text.strip():
+            raise ValueError("Title cannot be empty or contain only whitespace. Please provide a valid title in <h1> tags.")
+        
+        return html_content
     
     @staticmethod
     def parse_folder_path(folder_path: str) -> List[str]:
@@ -289,26 +344,7 @@ class ValidationUtils(BaseAppleScriptOperations):
         except Exception:
             return False
     
-    @staticmethod
-    def escape_applescript_string(text: str) -> str:
-        """Escape text for use in AppleScript strings.
-        
-        Args:
-            text: The text to escape
-            
-        Returns:
-            Escaped text
-        """
-        if not text:
-            return '""'
-        
-        # Replace backslashes with double backslashes
-        escaped_text = text.replace('\\', '\\\\')
-        
-        # Replace quotes with escaped quotes
-        escaped_text = escaped_text.replace('"', '\\"')
-        
-        return f'"{escaped_text}"'
+
     
     @staticmethod
     def create_applescript_quoted_string(text: str) -> str:
@@ -354,140 +390,5 @@ class ValidationUtils(BaseAppleScriptOperations):
         
         return truncated + "..."
 
-    @staticmethod
-    async def check_note_name_exists(name: str, folder_path: str, exclude_note_id: str = None) -> bool:
-        """Check if a note with the given name already exists in the specified folder.
-        
-        This is a centralized method for duplicate name validation that can be used
-        by both create_note and update_note operations.
-        
-        Args:
-            name: The note name to check
-            folder_path: The folder path to check in
-            exclude_note_id: Optional note ID to exclude from the check (for updates)
-            
-        Returns:
-            True if a note with the same name exists, False otherwise
-            
-        Raises:
-            ValueError: If the name is invalid
-        """
-        # Validate the note name first
-        try:
-            validated_name = ValidationUtils.validate_note_name(name)
-        except ValueError as e:
-            raise ValueError(f"Invalid note name for duplicate check: {str(e)}")
-        
-        # Fetch all note names and IDs from the folder
-        notes_data = await ValidationUtils._get_notes_from_folder(folder_path)
-        
-        # Check for duplicates, excluding the specified note ID if provided
-        for note_name, note_id in notes_data:
-            if note_name == validated_name:
-                if exclude_note_id is None or note_id != exclude_note_id:
-                    return True
-        
-        return False
-    
-    @staticmethod
-    async def _get_notes_from_folder(folder_path: str) -> list:
-        """Get all note names and IDs from a folder.
-        
-        Args:
-            folder_path: The folder path to get notes from
-            
-        Returns:
-            List of tuples (note_name, note_id)
-        """
-        # Check if it's a simple folder (no slashes) or nested path
-        if '/' not in folder_path:
-            # Simple folder - use direct folder access
-            script = f'''
-            tell application "Notes"
-                try
-                    set targetFolder to folder "{folder_path}"
-                    set notesList to {{}}
-                    repeat with currentNote in notes of targetFolder
-                        set notesList to notesList & {{(name of currentNote as string), (id of currentNote as string)}}
-                    end repeat
-                    return notesList
-                on error errMsg
-                    return "error:" & errMsg
-                end try
-            end tell
-            '''
-        else:
-            # Nested path - navigate to the folder first
-            from .folder_utils import FolderPathUtils
-            path_components = FolderPathUtils.parse_folder_path(folder_path)
-            
-            script = f'''
-            tell application "Notes"
-                try
-                    set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
-                    
-                    repeat with i from 1 to count of pathComponents
-                        set componentName to item i of pathComponents
-                        
-                        if currentFolder is missing value then
-                            -- Start from root folders
-                            repeat with rootFolder in folders
-                                if name of rootFolder is componentName then
-                                    set currentFolder to rootFolder
-                                    exit repeat
-                                end if
-                            end repeat
-                        else
-                            -- Navigate into subfolders
-                            repeat with subFolder in folders of currentFolder
-                                if name of subFolder is componentName then
-                                    set currentFolder to subFolder
-                                    exit repeat
-                                end if
-                            end repeat
-                        end if
-                    end repeat
-                    
-                    if currentFolder is missing value then
-                        return "error:Folder not found"
-                    end if
-                    
-                    set notesList to {{}}
-                    repeat with currentNote in notes of currentFolder
-                        set notesList to notesList & {{(name of currentNote as string), (id of currentNote as string)}}
-                    end repeat
-                    return notesList
-                on error errMsg
-                    return "error:" & errMsg
-                end try
-            end tell
-            '''
-        
-        try:
-            result = await ValidationUtils.execute_applescript(script)
-            
-            # Check if there was an error
-            if result.startswith("error:"):
-                return []
-            
-            # Parse the result - AppleScript returns a flat list, so we need to pair them
-            # The result format is: "name1, id1, name2, id2, ..."
-            if not result or result == "":
-                return []
-            
-            # Split the result and pair them
-            items = result.split(", ")
-            notes_data = []
-            
-            for i in range(0, len(items), 2):
-                if i + 1 < len(items):
-                    note_name = items[i].strip('"')  # Remove quotes
-                    note_id = items[i + 1].strip('"')  # Remove quotes
-                    notes_data.append((note_name, note_id))
-            
-            return notes_data
-            
-        except Exception:
-            return []
+
         

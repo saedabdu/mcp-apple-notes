@@ -1,6 +1,5 @@
 from typing import Dict
 from .base_operations import BaseAppleScriptOperations
-from .folder_utils import FolderPathUtils
 from .validation_utils import ValidationUtils
 from .note_id_utils import NoteIDUtils
 
@@ -14,12 +13,12 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         This unified method handles both simple folders and nested paths.
         The folder path must exist before creating the note.
         
-        IMPORTANT: The body parameter should contain HTML-formatted content.
-        The title will be automatically wrapped in <h1> tags and prepended to the body.
+        IMPORTANT: The body parameter should contain complete HTML-formatted content
+        that combines both title and body content. This will be passed directly to Apple Notes.
         
         Args:
-            name: Name of the note (will be wrapped in <h1> tags)
-            body: HTML content of the note (should include proper HTML tags)
+            name: Name of the note for Apple Notes internal reference (used for identification)
+            body: Complete HTML content combining title and body (e.g., '<h1>Title</h1><p>Content</p>')
             folder_path: Folder path (e.g., "Work" or "Work/Projects/2024"). 
                         Must exist before creating note. Defaults to "Notes".
         """
@@ -37,8 +36,8 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         body = ValidationUtils.validate_note_body(body)
         folder_path = folder_path.strip()
         
-        # Format title with h1 tag and concatenate with body as HTML content
-        html_content = f"<h1>{validated_name}</h1><br>{body}"
+        # Use the body content directly - it contains combined title + body HTML
+        html_content = body
         
         # Check if it's a simple folder (no slashes) or nested path
         if '/' not in folder_path:
@@ -51,12 +50,16 @@ class CreateNoteOperations(BaseAppleScriptOperations):
     @staticmethod
     async def _create_note_in_simple_folder(name: str, html_content: str, folder_name: str) -> Dict[str, str]:
         """Create a new note in a simple folder (no nested paths)."""
+        # Escape the HTML content for AppleScript
+        escaped_html = ValidationUtils.create_applescript_quoted_string(html_content)
+        escaped_folder = ValidationUtils.create_applescript_quoted_string(folder_name)
+        
         script = f'''
         tell application "Notes"
             try
-                set targetFolder to folder "{folder_name}"
-                set newNote to make new note at targetFolder with properties {{body:"{html_content}"}}
-                return {{name:(name of newNote), folder:"{folder_name}", note_id:(id of newNote as string)}}
+                set targetFolder to folder {escaped_folder}
+                set newNote to make new note at targetFolder with properties {{body:{escaped_html}}}
+                return {{name:(name of newNote), folder:{escaped_folder}, note_id:(id of newNote as string)}}
             on error errMsg
                 return "error:" & errMsg
             end try
@@ -79,14 +82,18 @@ class CreateNoteOperations(BaseAppleScriptOperations):
             raise RuntimeError(f"Folder path '{folder_path}' does not exist. Please create the folder structure first.")
         
         # Parse the path components
-        path_components = FolderPathUtils.parse_folder_path(folder_path)
+        path_components = ValidationUtils.parse_folder_path(folder_path)
+        
+        # Escape the HTML content for AppleScript
+        escaped_html = ValidationUtils.create_applescript_quoted_string(html_content)
+        escaped_folder_path = ValidationUtils.create_applescript_quoted_string(folder_path)
         
         # Create the note in the existing folder
         script = f'''
         tell application "Notes"
             try
                 set currentFolder to missing value
-                set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
+                set pathComponents to {{{", ".join([ValidationUtils.create_applescript_quoted_string(component) for component in path_components])}}}
                 
                 repeat with i from 1 to count of pathComponents
                     set componentName to item i of pathComponents
@@ -114,8 +121,8 @@ class CreateNoteOperations(BaseAppleScriptOperations):
                     return "error:Target folder not found"
                 end if
                 
-                set newNote to make new note at currentFolder with properties {{body:"{html_content}"}}
-                return {{name:(name of newNote), folder:"{folder_path}", note_id:(id of newNote as string)}}
+                set newNote to make new note at currentFolder with properties {{body:{escaped_html}}}
+                return {{name:(name of newNote), folder:{escaped_folder_path}, note_id:(id of newNote as string)}}
             on error errMsg
                 return "error:" & errMsg
             end try

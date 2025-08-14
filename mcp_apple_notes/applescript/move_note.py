@@ -1,66 +1,95 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict
 from .base_operations import BaseAppleScriptOperations
-from .folder_utils import FolderPathUtils
 from .validation_utils import ValidationUtils
 
 class MoveNoteOperations(BaseAppleScriptOperations):
     """Operations for moving Apple Notes between folders."""
     
     @staticmethod
-    def _validate_note_name(name: str) -> str:
-        """Validate and clean note name."""
-        return ValidationUtils.validate_note_name(name)
-    
-    @staticmethod
-    def _create_applescript_quoted_string(text: str) -> str:
-        """Create AppleScript quoted string that handles special characters properly."""
-        return ValidationUtils.create_applescript_quoted_string(text)
-    
-    @staticmethod
-    async def _check_path_exists(folder_path: str) -> bool:
-        """Check if a folder path exists."""
-        return await ValidationUtils.check_path_exists(folder_path)
-    
-    @staticmethod
-    async def _check_note_exists(note_name: str, folder_path: str) -> bool:
-        """Check if a note exists in a specific folder."""
-        quoted_note_name = MoveNoteOperations._create_applescript_quoted_string(note_name)
+    async def move_note(note_id: str, source_folder_path: str, target_folder_path: str) -> Dict[str, str]:
+        """Move a note from source folder to target folder.
         
-        # Check if it's a simple folder (no slashes) or nested path
-        if '/' not in folder_path:
-            # Simple folder - use direct folder access
+        This method performs comprehensive validation before moving:
+        1. Validate note ID is not empty
+        2. Check source and target paths are different
+        3. Verify note exists in source folder
+        4. Verify target folder path exists
+        5. Perform move operation using simple AppleScript
+        
+        Args:
+            note_id: Primary key ID of the note to move (e.g., "p1308")
+            source_folder_path: Current folder path where note is located
+            target_folder_path: Target folder path where to move the note
+            
+        Returns:
+            Move result with status and details
+            
+        Raises:
+            ValueError: If inputs are invalid
+            RuntimeError: If note not found, paths don't exist, or move fails
+        """
+        # Step 1: Validate note ID is not empty
+        if not note_id or not note_id.strip():
+            raise ValueError("Note ID cannot be empty")
+        
+        note_id = note_id.strip()
+        
+        # Step 2: Check source and target paths are different
+        if source_folder_path.strip() == target_folder_path.strip():
+            raise ValueError("Source and target folder paths must be different")
+        
+        # Clean and validate paths
+        source_folder_path = ValidationUtils.validate_folder_path(source_folder_path)
+        target_folder_path = ValidationUtils.validate_folder_path(target_folder_path)
+        
+        # Step 3: Verify note exists in source folder
+        note_exists = await MoveNoteOperations._verify_note_in_folder(note_id, source_folder_path)
+        if not note_exists:
+            raise RuntimeError(f"Note with ID '{note_id}' not found in source folder '{source_folder_path}'")
+        
+        # Step 4: Verify target folder path exists
+        target_exists = await ValidationUtils.check_path_exists(target_folder_path)
+        if not target_exists:
+            raise RuntimeError(f"Target folder path '{target_folder_path}' does not exist")
+        
+        # Step 5: Perform move operation using simple AppleScript
+        return await MoveNoteOperations._perform_move_operation(note_id, source_folder_path, target_folder_path)
+    
+    @staticmethod
+    async def _verify_note_in_folder(note_id: str, folder_path: str) -> bool:
+        """Verify that a note exists in the specified folder."""
+        # Escape parameters for AppleScript
+        escaped_note_id = ValidationUtils.create_applescript_quoted_string(note_id)
+        
+        # Handle root level vs nested path
+        if not folder_path or folder_path.strip() == "":
+            # Root level - check in root folders
             script = f'''
             tell application "Notes"
                 try
-                    set folderToCheck to folder "{folder_path}"
-                    
-                    -- Find the note in the specified folder using a safer approach
-                    set noteFound to false
-                    set noteCount to 0
-                    
-                    set allNotes to notes of folderToCheck
-                    repeat with i from 1 to count of allNotes
-                        set currentNote to item i of allNotes
-                        if name of currentNote is {quoted_note_name} then
-                            set noteCount to noteCount + 1
-                            set noteFound to true
-                        end if
+                    repeat with rootFolder in folders
+                        repeat with noteItem in notes of rootFolder
+                            set noteId to id of noteItem as string
+                            if noteId ends with {escaped_note_id} then
+                                return "true"
+                            end if
+                        end repeat
                     end repeat
-                    
-                    return noteFound
+                    return "false"
                 on error errMsg
                     return "error:" & errMsg
                 end try
             end tell
             '''
         else:
-            # Nested path - navigate to the folder first
-            path_components = FolderPathUtils.parse_folder_path(folder_path)
+            # Nested path - navigate to folder
+            path_components = ValidationUtils.parse_folder_path(folder_path)
+            
             script = f'''
             tell application "Notes"
                 try
                     set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
+                    set pathComponents to {{{", ".join([ValidationUtils.create_applescript_quoted_string(component) for component in path_components])}}}
                     
                     repeat with i from 1 to count of pathComponents
                         set componentName to item i of pathComponents
@@ -70,6 +99,7 @@ class MoveNoteOperations(BaseAppleScriptOperations):
                             repeat with rootFolder in folders
                                 if name of rootFolder is componentName then
                                     set currentFolder to rootFolder
+                                    exit repeat
                                 end if
                             end repeat
                         else
@@ -77,29 +107,24 @@ class MoveNoteOperations(BaseAppleScriptOperations):
                             repeat with subFolder in folders of currentFolder
                                 if name of subFolder is componentName then
                                     set currentFolder to subFolder
+                                    exit repeat
                                 end if
                             end repeat
                         end if
                     end repeat
                     
-                    if currentFolder is missing value then
-                        return "error:Folder not found"
+                    -- Check if note exists in the target folder
+                    if currentFolder is not missing value then
+                        repeat with noteItem in notes of currentFolder
+                            set noteId to id of noteItem as string
+                            if noteId ends with {escaped_note_id} then
+                                return "true"
+                            end if
+                        end repeat
                     end if
                     
-                    -- Find the note in the specified folder using a safer approach
-                    set noteFound to false
-                    set noteCount to 0
+                    return "false"
                     
-                    set allNotes to notes of currentFolder
-                    repeat with i from 1 to count of allNotes
-                        set currentNote to item i of allNotes
-                        if name of currentNote is {quoted_note_name} then
-                            set noteCount to noteCount + 1
-                            set noteFound to true
-                        end if
-                    end repeat
-                    
-                    return noteFound
                 on error errMsg
                     return "error:" & errMsg
                 end try
@@ -109,99 +134,26 @@ class MoveNoteOperations(BaseAppleScriptOperations):
         result = await MoveNoteOperations.execute_applescript(script)
         
         if result.startswith("error:"):
-            raise RuntimeError(f"Error checking note existence: {result[6:]}")
+            raise RuntimeError(f"Error verifying note: {result[6:]}")
         
-        return result == "true"
+        return result.strip() == "true"
     
     @staticmethod
-    async def move_note(note_name: str, source_folder_path: str, target_folder_path: str) -> Dict[str, Any]:
-        """Move a note from one folder to another.
+    async def _perform_move_operation(note_id: str, source_folder_path: str, target_folder_path: str) -> Dict[str, str]:
+        """Perform the move operation using simple AppleScript."""
+        # Get the full note ID (we need the complete x-coredata:// URL)
+        full_note_id = await MoveNoteOperations._get_full_note_id(note_id, source_folder_path)
         
-        Args:
-            note_name: Name of the note to move
-            source_folder_path: Current folder path where the note is located
-            target_folder_path: Target folder path where to move the note
-            
-        Returns:
-            Move operation result with status and details
-            
-        Raises:
-            ValueError: If note name is empty or invalid
-            RuntimeError: If source/target paths don't exist, note not found, or move operation fails
-        """
-        # Validate inputs
-        if not note_name:
-            raise ValueError("Note name cannot be empty")
+        # Escape parameters for AppleScript
+        escaped_full_note_id = ValidationUtils.create_applescript_quoted_string(full_note_id)
+        escaped_target_folder = ValidationUtils.create_applescript_quoted_string(target_folder_path)
         
-        note_name = MoveNoteOperations._validate_note_name(note_name)
-        source_folder_path = source_folder_path.strip() if source_folder_path else "Notes"
-        target_folder_path = target_folder_path.strip() if target_folder_path else "Notes"
-        
-        # Don't allow moving to the same location
-        if source_folder_path == target_folder_path:
-            raise ValueError(f"Cannot move note to the same folder. Source and target paths are identical: '{source_folder_path}'")
-        
-        # Check if it's a simple folder (no slashes) or nested path
-        if '/' not in source_folder_path and '/' not in target_folder_path:
-            # Both are simple folders - use direct folder access
-            return await MoveNoteOperations._move_note_simple_folders(note_name, source_folder_path, target_folder_path)
-        else:
-            # At least one is a nested path - use path navigation
-            return await MoveNoteOperations._move_note_with_paths(note_name, source_folder_path, target_folder_path)
-    
-    @staticmethod
-    async def _move_note_simple_folders(note_name: str, source_folder: str, target_folder: str) -> Dict[str, Any]:
-        """Move a note between simple folders (no nested paths)."""
-        quoted_note_name = MoveNoteOperations._create_applescript_quoted_string(note_name)
-        
+        # Simple move operation
         script = f'''
         tell application "Notes"
             try
-                set sourceFolder to folder "{source_folder}"
-                set targetFolder to folder "{target_folder}"
-                set targetNote to missing value
-                set noteId to missing value
-                set noteCount to 0
-                
-                -- Find the note in source folder using a safer approach
-                set allNotes to notes of sourceFolder
-                repeat with i from 1 to count of allNotes
-                    set currentNote to item i of allNotes
-                    if name of currentNote is {quoted_note_name} then
-                        set noteCount to noteCount + 1
-                        if noteCount is 1 then
-                            set targetNote to currentNote
-                            set noteId to id of currentNote
-                        end if
-                    end if
-                end repeat
-                
-                if noteCount is 0 then
-                    return "error:Note not found"
-                end if
-                
-                if noteCount > 1 then
-                    return "error:Duplicate notes detected: Found " & noteCount & " notes with the same title '" & {quoted_note_name} & "' in folder '" & name of sourceFolder & "'. Please rename the notes manually to have unique titles before proceeding with moves."
-                end if
-                
-                -- Move the note to target folder
-                move targetNote to targetFolder
-                
-                -- Get note details after move
-                set noteName to name of targetNote
-                set noteBody to body of targetNote
-                set noteCreationDate to creation date of targetNote
-                set noteModificationDate to modification date of targetNote
-                
-                -- Use a safer approach for string concatenation with proper escaping
-                set safeNoteBody to noteBody
-                if noteBody contains "|" then
-                    set safeNoteBody to "Note body contains separator characters"
-                end if
-                
-                set resultString to "success:" & noteName & "|" & safeNoteBody & "|" & noteCreationDate & "|" & noteModificationDate & "|" & "{target_folder}" & "|" & noteCount
-                return resultString
-                
+                move note id {escaped_full_note_id} to folder {escaped_target_folder}
+                return "moved:success:{note_id}:{source_folder_path}:{target_folder_path}"
             on error errMsg
                 return "error:" & errMsg
             end try
@@ -210,241 +162,46 @@ class MoveNoteOperations(BaseAppleScriptOperations):
         
         result = await MoveNoteOperations.execute_applescript(script)
         
-        # Parse the result
         if result.startswith("error:"):
-            error_msg = result[6:]  # Remove "error:" prefix
-            if "Duplicate notes detected" in error_msg:
-                raise RuntimeError(f"{error_msg}")
-            elif "Note not found" in error_msg:
-                raise RuntimeError(f"Note '{note_name}' not found in source folder '{source_folder}'")
-            elif "Can't get folder" in error_msg:
-                raise RuntimeError(f"Folder '{source_folder}' does not exist")
-            else:
-                raise RuntimeError(f"Failed to move note: {error_msg}")
-        elif result.startswith("success:"):
-            # Parse success result
-            success_data = result[8:]  # Remove "success:" prefix
-            parts = success_data.split("|")
-            
-            if len(parts) >= 6:
-                return {
-                    "name": parts[0],
-                    "body": parts[1],
-                    "creation_date": parts[2],
-                    "modification_date": parts[3],
-                    "target_folder": parts[4],
-                    "total_matches": int(parts[5]) if parts[5].isdigit() else 1,
-                    "note_index": 1,
-                    "source_folder": source_folder,
-                    "status": "moved",
-                    "message": f"Note '{note_name}' successfully moved from '{source_folder}' to '{target_folder}'"
-                }
-            else:
-                raise RuntimeError("Unexpected response format from AppleScript")
-        else:
-            raise RuntimeError(f"Unexpected response from AppleScript: {result}")
+            raise RuntimeError(f"Failed to move note: {result[6:]}")
+        
+        return MoveNoteOperations._parse_move_result(result, note_id, source_folder_path, target_folder_path)
     
     @staticmethod
-    async def _move_note_with_paths(note_name: str, source_folder_path: str, target_folder_path: str) -> Dict[str, Any]:
-        """Move a note using path navigation for nested folders."""
-        quoted_note_name = MoveNoteOperations._create_applescript_quoted_string(note_name)
+    async def _get_full_note_id(note_id: str, folder_path: str) -> str:
+        """Get the full note ID (x-coredata:// URL) from the short ID."""
+        # Escape parameters for AppleScript
+        escaped_note_id = ValidationUtils.create_applescript_quoted_string(note_id)
         
-        # Parse path components
-        source_components = FolderPathUtils.parse_folder_path(source_folder_path)
-        target_components = FolderPathUtils.parse_folder_path(target_folder_path)
-        
-        script = f'''
-        tell application "Notes"
-            try
-                set sourceFolder to missing value
-                set targetFolder to missing value
-                set noteToMove to missing value
-                
-                -- Navigate to source folder
-                set sourcePathComponents to {{{", ".join([f'"{component}"' for component in source_components])}}}
-                repeat with i from 1 to count of sourcePathComponents
-                    set componentName to item i of sourcePathComponents
-                    
-                    if sourceFolder is missing value then
-                        -- Start from root folders
-                        repeat with rootFolder in folders
-                            if name of rootFolder is componentName then
-                                set sourceFolder to rootFolder
-                            end if
-                        end repeat
-                    else
-                        -- Navigate into subfolders
-                        repeat with subFolder in folders of sourceFolder
-                            if name of subFolder is componentName then
-                                set sourceFolder to subFolder
-                            end if
-                        end repeat
-                    end if
-                end repeat
-                
-                if sourceFolder is missing value then
-                    return "error:Source folder not found"
-                end if
-                
-                -- Navigate to target folder
-                set targetPathComponents to {{{", ".join([f'"{component}"' for component in target_components])}}}
-                repeat with i from 1 to count of targetPathComponents
-                    set componentName to item i of targetPathComponents
-                    
-                    if targetFolder is missing value then
-                        -- Start from root folders
-                        repeat with rootFolder in folders
-                            if name of rootFolder is componentName then
-                                set targetFolder to rootFolder
-                            end if
-                        end repeat
-                    else
-                        -- Navigate into subfolders
-                        repeat with subFolder in folders of targetFolder
-                            if name of subFolder is componentName then
-                                set targetFolder to subFolder
-                            end if
-                        end repeat
-                    end if
-                end repeat
-                
-                if targetFolder is missing value then
-                    return "error:Target folder not found"
-                end if
-                
-                -- Find the note in source folder
-                set targetNote to missing value
-                set noteId to missing value
-                set noteCount to 0
-                
-                -- Find the note in source folder using a safer approach
-                set allNotes to notes of sourceFolder
-                repeat with i from 1 to count of allNotes
-                    set currentNote to item i of allNotes
-                    if name of currentNote is {quoted_note_name} then
-                        set noteCount to noteCount + 1
-                        if noteCount is 1 then
-                            set targetNote to currentNote
-                            set noteId to id of currentNote
-                        end if
-                    end if
-                end repeat
-                
-                if noteCount is 0 then
-                    return "error:Note not found"
-                end if
-                
-                if noteCount > 1 then
-                    return "error:Duplicate notes detected: Found " & noteCount & " notes with the same title '" & {quoted_note_name} & "' in folder '" & name of sourceFolder & "'. Please rename the notes manually to have unique titles before proceeding with moves."
-                end if
-                
-                -- Move the note to target folder
-                move targetNote to targetFolder
-                
-                -- Get note details after move
-                set noteName to name of targetNote
-                set noteBody to body of targetNote
-                set noteCreationDate to creation date of targetNote
-                set noteModificationDate to modification date of targetNote
-                
-                -- Use a safer approach for string concatenation with proper escaping
-                set safeNoteBody to noteBody
-                if noteBody contains "|" then
-                    set safeNoteBody to "Note body contains separator characters"
-                end if
-                
-                set resultString to "success:" & noteName & "|" & safeNoteBody & "|" & noteCreationDate & "|" & noteModificationDate & "|" & "{target_folder_path}" & "|" & noteCount
-                return resultString
-                
-            on error scriptError
-                return "error:" & scriptError
-            end try
-        end tell
-        '''
-        
-        result = await MoveNoteOperations.execute_applescript(script)
-        
-        # Parse the result
-        if result.startswith("error:"):
-            error_msg = result[6:]  # Remove "error:" prefix
-            if "Duplicate notes detected" in error_msg:
-                raise RuntimeError(f"{error_msg}")
-            elif "Note not found" in error_msg:
-                raise RuntimeError(f"Note '{note_name}' not found in source folder '{source_folder_path}'")
-            elif "Source folder not found" in error_msg:
-                raise RuntimeError(f"Source folder '{source_folder_path}' does not exist")
-            elif "Target folder not found" in error_msg:
-                raise RuntimeError(f"Target folder '{target_folder_path}' does not exist")
-            elif "Can't get folder" in error_msg:
-                raise RuntimeError(f"Folder path error: {error_msg}")
-            else:
-                raise RuntimeError(f"Failed to move note: {error_msg}")
-        elif result.startswith("success:"):
-            # Parse success result
-            success_data = result[8:]  # Remove "success:" prefix
-            parts = success_data.split("|")
-            
-            if len(parts) >= 6:
-                return {
-                    "name": parts[0],
-                    "body": parts[1],
-                    "creation_date": parts[2],
-                    "modification_date": parts[3],
-                    "target_folder": parts[4],
-                    "total_matches": int(parts[5]) if parts[5].isdigit() else 1,
-                    "note_index": 1,
-                    "source_folder": source_folder_path,
-                    "status": "moved",
-                    "message": f"Note '{note_name}' successfully moved from '{source_folder_path}' to '{target_folder_path}'"
-                }
-            else:
-                raise RuntimeError("Unexpected response format from AppleScript")
-        else:
-            raise RuntimeError(f"Unexpected response from AppleScript: {result}")
-    
-    @staticmethod
-    async def _move_note_by_id(note_id: str, target_folder_path: str, note_name: str, source_folder_path: str) -> Dict[str, Any]:
-        """Move a note by its ID to the target folder."""
-        # Check if it's a simple folder (no slashes) or nested path
-        if '/' not in target_folder_path:
-            # Simple folder - use direct folder access
+        # Handle root level vs nested path
+        if not folder_path or folder_path.strip() == "":
+            # Root level - check in root folders
             script = f'''
             tell application "Notes"
                 try
-                    set targetFolder to folder "{target_folder_path}"
-                    set noteToMove to note id "{note_id}"
-                    
-                    -- Move the note to target folder
-                    move noteToMove to targetFolder
-                    
-                    -- Get note details after move
-                    set noteName to name of noteToMove
-                    set noteBody to body of noteToMove
-                    set noteCreationDate to creation date of noteToMove
-                    set noteModificationDate to modification date of noteToMove
-                    
-                    -- Use a safer approach for string concatenation with proper escaping
-                    set safeNoteBody to noteBody
-                    if noteBody contains "|" then
-                        set safeNoteBody to "Note body contains separator characters"
-                    end if
-                    
-                    set resultString to "success:" & noteName & "|" & safeNoteBody & "|" & noteCreationDate & "|" & noteModificationDate & "|" & "{target_folder_path}" & "|1"
-                    return resultString
-                    
-                on error scriptError
-                    return "error:" & scriptError
+                    repeat with rootFolder in folders
+                        repeat with noteItem in notes of rootFolder
+                            set noteId to id of noteItem as string
+                            if noteId ends with {escaped_note_id} then
+                                return noteId
+                            end if
+                        end repeat
+                    end repeat
+                    return "error:Note not found"
+                on error errMsg
+                    return "error:" & errMsg
                 end try
             end tell
             '''
         else:
-            # Nested path - navigate to the folder first
-            path_components = FolderPathUtils.parse_folder_path(target_folder_path)
+            # Nested path - navigate to folder
+            path_components = ValidationUtils.parse_folder_path(folder_path)
+            
             script = f'''
             tell application "Notes"
                 try
                     set currentFolder to missing value
-                    set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
+                    set pathComponents to {{{", ".join([ValidationUtils.create_applescript_quoted_string(component) for component in path_components])}}}
                     
                     repeat with i from 1 to count of pathComponents
                         set componentName to item i of pathComponents
@@ -454,6 +211,7 @@ class MoveNoteOperations(BaseAppleScriptOperations):
                             repeat with rootFolder in folders
                                 if name of rootFolder is componentName then
                                     set currentFolder to rootFolder
+                                    exit repeat
                                 end if
                             end repeat
                         else
@@ -461,66 +219,70 @@ class MoveNoteOperations(BaseAppleScriptOperations):
                             repeat with subFolder in folders of currentFolder
                                 if name of subFolder is componentName then
                                     set currentFolder to subFolder
+                                    exit repeat
                                 end if
                             end repeat
                         end if
                     end repeat
                     
-                    if currentFolder is missing value then
-                        return "error:Target folder not found"
+                    -- Get note ID from the target folder
+                    if currentFolder is not missing value then
+                        repeat with noteItem in notes of currentFolder
+                            set noteId to id of noteItem as string
+                            if noteId ends with {escaped_note_id} then
+                                return noteId
+                            end if
+                        end repeat
                     end if
                     
-                    set noteToMove to note id "{note_id}"
+                    return "error:Note not found"
                     
-                    -- Move the note to target folder
-                    move noteToMove to currentFolder
-                    
-                    -- Get note details after move
-                    set noteName to name of noteToMove
-                    set noteBody to body of noteToMove
-                    set noteCreationDate to creation date of noteToMove
-                    set noteModificationDate to modification date of noteToMove
-                    
-                    -- Use a safer approach for string concatenation with proper escaping
-                    set safeNoteBody to noteBody
-                    if noteBody contains "|" then
-                        set safeNoteBody to "Note body contains separator characters"
-                    end if
-                    
-                    set resultString to "success:" & noteName & "|" & safeNoteBody & "|" & noteCreationDate & "|" & noteModificationDate & "|" & "{target_folder_path}" & "|1"
-                    return resultString
-                    
-                on error scriptError
-                    return "error:" & scriptError
+                on error errMsg
+                    return "error:" & errMsg
                 end try
             end tell
             '''
         
         result = await MoveNoteOperations.execute_applescript(script)
         
-        # Parse the result
         if result.startswith("error:"):
-            error_msg = result[6:]  # Remove "error:" prefix
-            raise RuntimeError(error_msg)
-        elif result.startswith("success:"):
-            # Parse success result
-            success_data = result[8:]  # Remove "success:" prefix
-            parts = success_data.split("|")
+            raise RuntimeError(f"Error getting full note ID: {result[6:]}")
+        
+        return result.strip()
+    
+    @staticmethod
+    def _parse_move_result(result: str, note_id: str, source_folder_path: str, target_folder_path: str) -> Dict[str, str]:
+        """Parse the AppleScript result and return structured data."""
+        try:
+            if result.startswith("moved:success:"):
+                # Parse the moved result format: "moved:success:noteId:sourceFolder:targetFolder"
+                parts = result.split(":")
+                if len(parts) >= 5:
+                    note_id = parts[2]
+                    source_folder = parts[3]
+                    target_folder = parts[4]
+                    
+                    return {
+                        "name": f"Note {note_id}",
+                        "note_id": note_id,
+                        "source_folder": source_folder,
+                        "target_folder": target_folder,
+                        "status": "moved",
+                        "message": "Note moved successfully",
+                        "creation_date": "N/A",
+                        "modification_date": "N/A"
+                    }
             
-            if len(parts) >= 6:
-                return {
-                    "name": parts[0],
-                    "body": parts[1],
-                    "creation_date": parts[2],
-                    "modification_date": parts[3],
-                    "target_folder": parts[4],
-                    "total_matches": int(parts[5]) if parts[5].isdigit() else 1,
-                    "note_index": 1,
-                    "source_folder": source_folder_path,
-                    "status": "moved",
-                    "message": f"Note '{note_name}' successfully moved from '{source_folder_path}' to '{target_folder_path}'"
-                }
-            else:
-                raise RuntimeError("Unexpected response format from AppleScript")
-        else:
-            raise RuntimeError(f"Unexpected response from AppleScript: {result}")
+            # Fallback to input-based response
+            return {
+                "name": f"Note {note_id}",
+                "note_id": note_id,
+                "source_folder": source_folder_path or "Root",
+                "target_folder": target_folder_path or "Root",
+                "status": "moved",
+                "message": "Note moved successfully",
+                "creation_date": "N/A",
+                "modification_date": "N/A"
+            }
+        except Exception as e:
+            raise RuntimeError(f"Error parsing move result: {str(e)}")

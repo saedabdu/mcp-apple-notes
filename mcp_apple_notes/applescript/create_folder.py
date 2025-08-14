@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 from .base_operations import BaseAppleScriptOperations
-from .folder_utils import FolderPathUtils
+
 from .validation_utils import ValidationUtils
 
 class CreateFolderOperations(BaseAppleScriptOperations):
@@ -139,7 +139,7 @@ class CreateFolderOperations(BaseAppleScriptOperations):
     @staticmethod
     async def _create_nested_folder(folder_path: str) -> Dict[str, Any]:
         """Create a folder in an existing path (does not create parent folders)."""
-        path_components = FolderPathUtils.parse_folder_path(folder_path)
+        path_components = ValidationUtils.parse_folder_path(folder_path)
         
         if len(path_components) == 1:
             # Single level - create at root
