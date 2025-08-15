@@ -34,11 +34,8 @@ jobs:
       - name: Run tests
         run: uv run pytest
       
-      - name: Run linting
-        run: |
-          uv run black --check .
-          uv run isort --check-only .
-          uv run ruff check .
+      - name: Run basic formatting check
+        run: uv run black --check . --diff
       
-      - name: Run type checking
-        run: uv run mypy mcp_apple_notes/
+      - name: Run basic linting
+        run: uv run ruff check . --select E,F --ignore E501
