@@ -1,25 +1,26 @@
-from typing import Dict
+
 from .base_operations import BaseAppleScriptOperations
+
 
 class ReadNoteOperations(BaseAppleScriptOperations):
     """Operations for reading Apple Notes by ID with name verification."""
-    
+
     @staticmethod
-    async def read_note_by_id_and_name(note_id: str, note_name: str) -> Dict[str, str]:
+    async def read_note_by_id_and_name(note_id: str, note_name: str) -> dict[str, str]:
         """Read a note by its primary key ID with AppleScript verification.
-        
+
         This method relies on AppleScript's built-in verification:
         1. Validates input parameters (ID, note name)
         2. AppleScript verifies ID and name match the same note
         3. Performs the read operation if verification passes
-        
+
         Args:
             note_id: Primary key ID of the note (e.g., "p1308")
             note_name: Name of the note to verify and read
-            
+
         Returns:
             Note data with content, metadata, and verification info
-            
+
         Raises:
             ValueError: If note ID or name is empty or invalid
             RuntimeError: If note not found, name doesn't match, or read fails
@@ -27,16 +28,16 @@ class ReadNoteOperations(BaseAppleScriptOperations):
         # Validate inputs
         if not note_id or not note_id.strip():
             raise ValueError("Note ID cannot be empty or contain only whitespace")
-        
+
         if not note_name or not note_name.strip():
             raise ValueError("Note name cannot be empty or contain only whitespace")
-        
+
         note_id = note_id.strip()
         note_name = note_name.strip()
-        
+
         # Build full Core Data ID from primary key using dynamic store UUID
         # First get a sample note to extract the store UUID
-        script_get_uuid = '''
+        script_get_uuid = """
         tell application "Notes"
             try
                 set primaryAccount to account "iCloud"
@@ -47,18 +48,20 @@ class ReadNoteOperations(BaseAppleScriptOperations):
                 return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
             end try
         end tell
-        '''
-        
+        """
+
         sample_result = await ReadNoteOperations.execute_applescript(script_get_uuid)
         if sample_result.startswith("error:"):
-            raise RuntimeError(f"Could not get store UUID for reading: {sample_result[6:]}")
-        
+            raise RuntimeError(
+                f"Could not get store UUID for reading: {sample_result[6:]}"
+            )
+
         # Extract store UUID from sample ID
         store_uuid = sample_result.split("//")[1].split("/")[0]
         full_note_id = f"x-coredata://{store_uuid}/ICNote/{note_id}"
-        
+
         # Read the note using the full note ID with name verification
-        script = f'''
+        script = f"""
         tell application "Notes"
             try
                 set primaryAccount to account "iCloud"
@@ -81,10 +84,10 @@ class ReadNoteOperations(BaseAppleScriptOperations):
                 return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
             end try
         end tell
-        '''
-        
+        """
+
         result = await ReadNoteOperations.execute_applescript(script)
-        
+
         if result.startswith("error:"):
             error_msg = result[6:]
             if "Note name mismatch" in error_msg:
@@ -93,41 +96,42 @@ class ReadNoteOperations(BaseAppleScriptOperations):
                 raise RuntimeError(f"Note with ID '{note_id}' not found")
             else:
                 raise RuntimeError(f"Failed to read note: {error_msg}")
-        
+
         return ReadNoteOperations._parse_read_by_id_and_name_result(result, note_id)
-    
+
     @staticmethod
-    def _parse_read_by_id_and_name_result(result: str, note_id: str) -> Dict[str, str]:
+    def _parse_read_by_id_and_name_result(result: str, note_id: str) -> dict[str, str]:
         """Parse the AppleScript result for read by ID and name verification."""
         try:
             # The result format is: success:name|||full_id|||body|||creation_date|||modification_date
             if result.startswith("success:"):
                 content = result[8:]  # Remove "success:" prefix
                 parts = content.split("|||")
-                
+
                 if len(parts) >= 5:
                     from .note_id_utils import NoteIDUtils
+
                     # Extract primary key from full ID
                     primary_key = NoteIDUtils.extract_primary_key(parts[1])
-                    
+
                     return {
-                        'name': parts[0],
-                        'note_id': primary_key,
-                        'body': parts[2],
-                        'creation_date': parts[3],
-                        'modification_date': parts[4],
-                        'status': 'found',
-                        'read_method': 'by_id_and_name'
+                        "name": parts[0],
+                        "note_id": primary_key,
+                        "body": parts[2],
+                        "creation_date": parts[3],
+                        "modification_date": parts[4],
+                        "status": "found",
+                        "read_method": "by_id_and_name",
                     }
                 else:
                     return {
-                        'name': 'Unknown',
-                        'note_id': note_id,
-                        'body': 'Could not retrieve content',
-                        'creation_date': 'Unknown',
-                        'modification_date': 'Unknown',
-                        'status': 'found',
-                        'read_method': 'by_id_and_name'
+                        "name": "Unknown",
+                        "note_id": note_id,
+                        "body": "Could not retrieve content",
+                        "creation_date": "Unknown",
+                        "modification_date": "Unknown",
+                        "status": "found",
+                        "read_method": "by_id_and_name",
                     }
             else:
                 raise RuntimeError(f"Unexpected result format: {result}")

@@ -1,22 +1,26 @@
-from typing import Dict, Any
+from typing import Any
+
 from .base_operations import BaseAppleScriptOperations
 from .validation_utils import ValidationUtils
 
+
 class RenameFolderOperations(BaseAppleScriptOperations):
     """Operations for renaming folders in Apple Notes."""
-    
+
     @staticmethod
     def _create_applescript_quoted_string(text: str) -> str:
         """Escape text for safe AppleScript usage."""
         return ValidationUtils.create_applescript_quoted_string(text)
-    
+
     @staticmethod
-    async def _check_duplicate_name(new_name: str, folder_path: str, current_name: str) -> None:
+    async def _check_duplicate_name(
+        new_name: str, folder_path: str, current_name: str
+    ) -> None:
         """Check if the new folder name would create a duplicate."""
         # Get all folder names in the target location
         if not folder_path:
             # Root level - check root folders
-            script = '''
+            script = """
             tell application "Notes"
                 try
                     set primaryAccount to account "iCloud"
@@ -29,11 +33,11 @@ class RenameFolderOperations(BaseAppleScriptOperations):
                     return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
                 end try
             end tell
-            '''
+            """
         else:
             # Nested level - navigate to parent and check subfolders
             path_components = ValidationUtils.parse_folder_path(folder_path)
-            script = f'''
+            script = f"""
             tell application "Notes"
                 try
                     set primaryAccount to account "iCloud"
@@ -73,44 +77,54 @@ class RenameFolderOperations(BaseAppleScriptOperations):
                     return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
                 end try
             end tell
-            '''
-        
+            """
+
         result = await RenameFolderOperations.execute_applescript(script)
-        
+
         if result.startswith("error:"):
             raise RuntimeError(f"Failed to check duplicates: {result[6:]}")
-        
+
         # Parse folder names and check for duplicates
         if result and result != "{}":
             # Split the result by comma and check each name
-            folder_names = [name.strip().strip('"') for name in result.split(',') if name.strip()]
-            
+            folder_names = [
+                name.strip().strip('"') for name in result.split(",") if name.strip()
+            ]
+
             for folder_name in folder_names:
                 # Check if the new name already exists (excluding the current folder being renamed)
                 if folder_name == new_name:
                     # Only raise error if it's not the same folder being renamed
                     # OR if the new name is different from current name
                     if folder_name != current_name:
-                        location = "root level" if not folder_path else f"folder '{folder_path}'"
-                        raise ValueError(f"A folder named '{new_name}' already exists in {location}")
+                        location = (
+                            "root level"
+                            if not folder_path
+                            else f"folder '{folder_path}'"
+                        )
+                        raise ValueError(
+                            f"A folder named '{new_name}' already exists in {location}"
+                        )
 
     @staticmethod
-    async def rename_folder_by_id(folder_id: str, current_name: str, new_name: str) -> Dict[str, Any]:
+    async def rename_folder_by_id(
+        folder_id: str, current_name: str, new_name: str
+    ) -> dict[str, Any]:
         """Rename a folder by its primary key ID with AppleScript verification.
-        
+
         This method relies on AppleScript's built-in verification:
         1. Validates input parameters (ID, current name, new name)
         2. AppleScript verifies ID and name match the same folder
         3. Performs the rename operation if verification passes
-        
+
         Args:
             folder_id: Primary key ID of the folder (e.g., "p2330")
             current_name: Current name of the folder to verify and rename
             new_name: New name for the folder
-            
+
         Returns:
             Rename result with status and details
-            
+
         Raises:
             ValueError: If folder ID, current name, or new name is empty or invalid
             RuntimeError: If folder not found, name doesn't match, or duplicate name exists
@@ -118,36 +132,42 @@ class RenameFolderOperations(BaseAppleScriptOperations):
         # Validate inputs
         if not folder_id or not folder_id.strip():
             raise ValueError("Folder ID cannot be empty or contain only whitespace")
-        
+
         if not current_name or not current_name.strip():
-            raise ValueError("Current folder name cannot be empty or contain only whitespace")
-        
+            raise ValueError(
+                "Current folder name cannot be empty or contain only whitespace"
+            )
+
         if not new_name or not new_name.strip():
-            raise ValueError("New folder name cannot be empty or contain only whitespace")
-        
+            raise ValueError(
+                "New folder name cannot be empty or contain only whitespace"
+            )
+
         folder_id = folder_id.strip()
         current_name = current_name.strip()
         new_name = new_name.strip()
-        
+
         # Validate folder names
         try:
             validated_current_name = ValidationUtils.validate_folder_name(current_name)
             validated_new_name = ValidationUtils.validate_folder_name(new_name)
-            
+
             # Check if new name is same as current name
             if validated_current_name == validated_new_name:
                 raise ValueError("New folder name cannot be the same as current name")
-                
+
         except ValueError as e:
             raise ValueError(f"Invalid input: {str(e)}")
-        
+
         # Check for duplicate folder names in the same location
         # Since we don't have folder_path, we'll check for duplicates at root level
-        await RenameFolderOperations._check_duplicate_name(validated_new_name, "", validated_current_name)
-        
+        await RenameFolderOperations._check_duplicate_name(
+            validated_new_name, "", validated_current_name
+        )
+
         # Build full Core Data ID from primary key using dynamic store UUID
         # First get a sample folder to extract the store UUID
-        script_get_uuid = '''
+        script_get_uuid = """
         tell application "Notes"
             try
                 set primaryAccount to account "iCloud"
@@ -158,22 +178,30 @@ class RenameFolderOperations(BaseAppleScriptOperations):
                 return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
             end try
         end tell
-        '''
-        
-        sample_result = await RenameFolderOperations.execute_applescript(script_get_uuid)
+        """
+
+        sample_result = await RenameFolderOperations.execute_applescript(
+            script_get_uuid
+        )
         if sample_result.startswith("error:"):
-            raise RuntimeError(f"Could not get store UUID for renaming: {sample_result[6:]}")
-        
+            raise RuntimeError(
+                f"Could not get store UUID for renaming: {sample_result[6:]}"
+            )
+
         # Extract store UUID from sample ID
         store_uuid = sample_result.split("//")[1].split("/")[0]
         full_folder_id = f"x-coredata://{store_uuid}/ICFolder/{folder_id}"
-        
+
         # Escape strings for safe AppleScript usage
-        escaped_current_name = RenameFolderOperations._create_applescript_quoted_string(validated_current_name)
-        escaped_new_name = RenameFolderOperations._create_applescript_quoted_string(validated_new_name)
-        
+        escaped_current_name = RenameFolderOperations._create_applescript_quoted_string(
+            validated_current_name
+        )
+        escaped_new_name = RenameFolderOperations._create_applescript_quoted_string(
+            validated_new_name
+        )
+
         # Get folder info and verify name matches, then rename
-        script = f'''
+        script = f"""
         tell application "Notes"
             try
                 set primaryAccount to account "iCloud"
@@ -194,10 +222,10 @@ class RenameFolderOperations(BaseAppleScriptOperations):
                 return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
             end try
         end tell
-        '''
-        
+        """
+
         result = await RenameFolderOperations.execute_applescript(script)
-        
+
         if result.startswith("error:"):
             error_msg = result[6:]
             if "Folder name mismatch" in error_msg:
@@ -206,34 +234,38 @@ class RenameFolderOperations(BaseAppleScriptOperations):
                 raise RuntimeError(f"Folder with ID '{folder_id}' not found")
             else:
                 raise RuntimeError(f"Failed to rename folder: {error_msg}")
-        
-        return RenameFolderOperations._parse_rename_by_id_result(result, folder_id, validated_current_name, validated_new_name)
-    
+
+        return RenameFolderOperations._parse_rename_by_id_result(
+            result, folder_id, validated_current_name, validated_new_name
+        )
+
     @staticmethod
-    def _parse_rename_by_id_result(result: str, folder_id: str, current_name: str, new_name: str) -> Dict[str, str]:
+    def _parse_rename_by_id_result(
+        result: str, folder_id: str, current_name: str, new_name: str
+    ) -> dict[str, str]:
         """Parse the AppleScript result for rename by ID and return rename information."""
         try:
             # The result format is: success:current_name, new_name, folder_path
             if result.startswith("success:"):
                 parts = result[8:].split(", ")  # Remove "success:" prefix
-                
+
                 if len(parts) >= 3:
                     return {
-                        'folder_id': folder_id,
-                        'current_name': parts[0],
-                        'new_name': parts[1],
-                        'folder_path': parts[2],
-                        'status': 'renamed',
-                        'rename_method': 'by_id_and_name'
+                        "folder_id": folder_id,
+                        "current_name": parts[0],
+                        "new_name": parts[1],
+                        "folder_path": parts[2],
+                        "status": "renamed",
+                        "rename_method": "by_id_and_name",
                     }
                 else:
                     return {
-                        'folder_id': folder_id,
-                        'current_name': current_name,
-                        'new_name': new_name,
-                        'folder_path': "root level",
-                        'status': 'renamed',
-                        'rename_method': 'by_id_and_name'
+                        "folder_id": folder_id,
+                        "current_name": current_name,
+                        "new_name": new_name,
+                        "folder_path": "root level",
+                        "status": "renamed",
+                        "rename_method": "by_id_and_name",
                     }
             else:
                 raise RuntimeError(f"Unexpected result format: {result}")
