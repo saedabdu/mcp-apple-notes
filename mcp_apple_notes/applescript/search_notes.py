@@ -24,10 +24,11 @@ class SearchNotesOperations(BaseAppleScriptOperations):
             script = f'''
             tell application "Notes"
                 try
+                    set primaryAccount to account "iCloud"
                     set keywords to {{{keywords_str}}}
                     set foundNotes to {{}}
                     
-                    repeat with currentNote in every note
+                    repeat with currentNote in every note of primaryAccount
                         set noteName to name of currentNote as string
                         set noteID to id of currentNote as string
                         set noteBody to body of currentNote as string
@@ -60,7 +61,7 @@ class SearchNotesOperations(BaseAppleScriptOperations):
                     
                     return foundNotes
                 on error errMsg
-                    return "error:" & errMsg
+                    return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
                 end try
             end tell
             '''

@@ -88,10 +88,10 @@ class CreateNoteOperations(BaseAppleScriptOperations):
         escaped_html = ValidationUtils.create_applescript_quoted_string(html_content)
         escaped_folder_path = ValidationUtils.create_applescript_quoted_string(folder_path)
         
-        # Create the note in the existing folder
         script = f'''
         tell application "Notes"
             try
+                set primaryAccount to account "iCloud"
                 set currentFolder to missing value
                 set pathComponents to {{{", ".join([ValidationUtils.create_applescript_quoted_string(component) for component in path_components])}}}
                 
@@ -99,8 +99,8 @@ class CreateNoteOperations(BaseAppleScriptOperations):
                     set componentName to item i of pathComponents
                     
                     if currentFolder is missing value then
-                        -- Start from root folders
-                        repeat with rootFolder in folders
+                        -- Start from root folders in iCloud account
+                        repeat with rootFolder in folders of primaryAccount
                             if name of rootFolder is componentName then
                                 set currentFolder to rootFolder
                                 exit repeat
@@ -124,7 +124,7 @@ class CreateNoteOperations(BaseAppleScriptOperations):
                 set newNote to make new note at currentFolder with properties {{body:{escaped_html}}}
                 return {{name:(name of newNote), folder:{escaped_folder_path}, note_id:(id of newNote as string)}}
             on error errMsg
-                return "error:" & errMsg
+                return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
             end try
         end tell
         '''

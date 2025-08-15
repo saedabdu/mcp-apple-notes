@@ -2,6 +2,8 @@ from .base_operations import BaseAppleScriptOperations
 from .create_note import CreateNoteOperations
 from .create_folder import CreateFolderOperations
 from .read_note import ReadNoteOperations
+from .read_folder import ReadFolderOperations
+from .delete_folder import DeleteFolderOperations
 
 from .rename_folder import RenameFolderOperations
 from .move_folder import MoveFolderOperations
@@ -12,14 +14,15 @@ from .delete_note import DeleteNoteOperations
 
 from .validation_utils import ValidationUtils
 from .note_id_utils import NoteIDUtils
-from .list_notes import ListNotesOperations
-from .folder_contents import FolderContentsOperations
+
 
 __all__ = [
     'BaseAppleScriptOperations',
     'CreateNoteOperations',
     'CreateFolderOperations',
     'ReadNoteOperations',
+    'ReadFolderOperations',
+    'DeleteFolderOperations',
 
     'RenameFolderOperations',
     'MoveFolderOperations',
@@ -29,7 +32,5 @@ __all__ = [
     'DeleteNoteOperations',
 
     'ValidationUtils',
-    'NoteIDUtils',
-    'ListNotesOperations',
-    'FolderContentsOperations'
+    'NoteIDUtils'
 ]

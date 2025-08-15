@@ -68,6 +68,7 @@ class NoteIDUtils(BaseAppleScriptOperations):
         script = f'''
         tell application "Notes"
             try
+                set primaryAccount to account "iCloud"
                 set currentFolder to missing value
                 set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
                 
@@ -75,8 +76,8 @@ class NoteIDUtils(BaseAppleScriptOperations):
                     set componentName to item i of pathComponents
                     
                     if currentFolder is missing value then
-                        -- Start from root folders
-                        repeat with rootFolder in folders
+                        -- Start from root folders in iCloud account
+                        repeat with rootFolder in folders of primaryAccount
                             if name of rootFolder is componentName then
                                 set currentFolder to rootFolder
                                 exit repeat
@@ -105,7 +106,7 @@ class NoteIDUtils(BaseAppleScriptOperations):
                 
                 return noteList
             on error errMsg
-                return "error:" & errMsg
+                return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
             end try
         end tell
         '''
@@ -188,3 +189,94 @@ class NoteIDUtils(BaseAppleScriptOperations):
             return full_note_id
         except:
             return full_note_id
+    
+    @staticmethod
+    def extract_folder_primary_key(full_folder_id: str) -> str:
+        """Extract just the primary key from a full folder Core Data ID.
+        
+        Args:
+            full_folder_id: Full Core Data ID like "x-coredata://UUID/ICFolder/p2330"
+            
+        Returns:
+            Just the primary key part like "p2330"
+        """
+        try:
+            # Split by '/' and get the last part
+            parts = full_folder_id.split('/')
+            if len(parts) > 0:
+                return parts[-1]  # Gets "p2330" part
+            return full_folder_id
+        except:
+            return full_folder_id
+    
+    @staticmethod
+    async def get_folder_name_by_id(folder_id: str) -> str:
+        """Get folder name by its primary key ID.
+        
+        Args:
+            folder_id: Primary key ID of the folder (e.g., "p2330")
+            
+        Returns:
+            Folder name
+            
+        Raises:
+            ValueError: If folder ID is empty or invalid
+            RuntimeError: If folder not found by ID
+        """
+        # Validate folder ID
+        if not folder_id or not folder_id.strip():
+            raise ValueError("Folder ID cannot be empty or contain only whitespace")
+        
+        folder_id = folder_id.strip()
+        
+        # Build full Core Data ID from primary key using dynamic store UUID
+        # First get a sample folder to extract the store UUID
+        script_get_uuid = '''
+        tell application "Notes"
+            try
+                set primaryAccount to account "iCloud"
+                set sampleFolder to folder 1 of primaryAccount
+                set sampleId to id of sampleFolder as string
+                return sampleId
+            on error errMsg
+                return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
+            end try
+        end tell
+        '''
+        
+        sample_result = await NoteIDUtils.execute_applescript(script_get_uuid)
+        if sample_result.startswith("error:"):
+            raise RuntimeError(f"Could not get store UUID for folder lookup: {sample_result[6:]}")
+        
+        # Extract store UUID from sample ID
+        store_uuid = sample_result.split("//")[1].split("/")[0]
+        full_folder_id = f"x-coredata://{store_uuid}/ICFolder/{folder_id}"
+        
+        # Get folder name by ID
+        script = f'''
+        tell application "Notes"
+            try
+                set primaryAccount to account "iCloud"
+                set targetFolder to folder id "{full_folder_id}"
+                
+                set folderName to name of targetFolder as string
+                return "success:" & folderName
+            on error errMsg
+                return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
+            end try
+        end tell
+        '''
+        
+        result = await NoteIDUtils.execute_applescript(script)
+        
+        if result.startswith("error:"):
+            error_msg = result[6:]
+            if "Folder not found" in error_msg or "not found" in error_msg:
+                raise RuntimeError(f"Folder with ID '{folder_id}' not found")
+            else:
+                raise RuntimeError(f"Failed to get folder name: {error_msg}")
+        
+        if result.startswith("success:"):
+            return result[8:]  # Remove "success:" prefix
+        else:
+            raise RuntimeError(f"Unexpected result format: {result}")

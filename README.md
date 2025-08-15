@@ -231,13 +231,14 @@ await create_note("Test", "Line 1<br>Line 2<br>Line 3")
 |------|-------------|------------|
 | `list_notes` | List notes with names and IDs from a specific folder path | `folder_path` (string, optional, default: "Notes") |
 | `list_all_notes` | List all notes across all folders with names and IDs | None |
-| `list_notes_with_structure` | List complete folder structure with notes included | None |
-| `list_folder_with_structure` | List complete folder structure | None |
+| `list_notes_with_structure` | List complete folder structure with notes and folder IDs | None |
+| `list_folder_with_structure` | List complete folder structure with folder IDs | None |
 | `create_note` | Create a new note (unified - handles simple and nested paths) | `name` (string), `body` (string, supports HTML/Unicode/URLs), `folder_path` (string, optional, default: "Notes") |
 | `read_note` | Read note by ID with folder verification | `note_id` (string, e.g., "p1308"), `folder_path` (string, optional, default: "Notes") |
 | `update_note` | Update note by ID with HTML content | `note_id` (string, e.g., "p1308"), `new_name` (string, HTML title), `new_body` (string, HTML content) |
 | `delete_note` | Delete note by ID with folder verification | `note_id` (string, e.g., "p1308"), `folder_path` (string, optional, default: "Notes") |
 | `move_note` | Move note between folders with validation | `note_id` (string, e.g., "p1308"), `source_folder_path` (string), `target_folder_path` (string) |
+| `list_folder_contents` | List both notes and folders in a folder with IDs | `folder_path` (string, optional, default: "Notes") |
 | `create_folder` | Create folder with optional path | `folder_name` (string), `folder_path` (string, optional) |
 
 | `rename_folder` | Rename folder with path support | `folder_path` (string), `current_name` (string), `new_name` (string) |

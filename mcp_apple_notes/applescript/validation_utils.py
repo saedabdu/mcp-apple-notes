@@ -266,6 +266,7 @@ class ValidationUtils(BaseAppleScriptOperations):
             script = f'''
             tell application "Notes"
                 try
+                    set primaryAccount to account "iCloud"
                     set currentFolder to missing value
                     set pathComponents to {{{", ".join([f'"{component}"' for component in path_components])}}}
                     
@@ -273,9 +274,9 @@ class ValidationUtils(BaseAppleScriptOperations):
                         set componentName to item i of pathComponents
                         
                         if currentFolder is missing value then
-                            -- Check root folders
+                            -- Check root folders in iCloud account
                             set found to false
-                            repeat with rootFolder in folders
+                            repeat with rootFolder in folders of primaryAccount
                                 if name of rootFolder is componentName then
                                     set currentFolder to rootFolder
                                     set found to true
@@ -303,7 +304,7 @@ class ValidationUtils(BaseAppleScriptOperations):
                     
                     return "exists"
                 on error errMsg
-                    return "error:" & errMsg
+                    return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
                 end try
             end tell
             '''
@@ -327,14 +328,15 @@ class ValidationUtils(BaseAppleScriptOperations):
             script = f'''
             tell application "Notes"
                 try
-                    repeat with rootFolder in folders
+                    set primaryAccount to account "iCloud"
+                    repeat with rootFolder in folders of primaryAccount
                         if name of rootFolder is "{folder_name}" then
                             return "exists"
                         end if
                     end repeat
                     return "not_found"
                 on error errMsg
-                    return "error:" & errMsg
+                    return "error:iCloud account not available. Please enable iCloud Notes sync - " & errMsg
                 end try
             end tell
             '''
