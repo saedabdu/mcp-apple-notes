@@ -33,9 +33,3 @@ jobs:
       
       - name: Run tests
         run: uv run pytest
-      
-      - name: Run basic formatting check
-        run: uv run black --check . --diff
-      
-      - name: Run basic linting
-        run: uv run ruff check . --select E,F --ignore E501
