@@ -75,14 +75,14 @@ Add this configuration to your MCP client:
 - `move_note` - Move notes between folders
 - `list_all_notes` - List all notes across all folders
 
-### **Folder Management (6 tools)**
+### **Folder Management (5 tools)**
 - `create_folder` - Create folders with path support
 - `read_folder` - Read folder details by ID
 - `rename_folder` - Rename folders by ID
 - `delete_folder` - Delete folders by ID
 - `move_folder` - Move folders between locations
 
-### **Search & Structure (2 tools)**
+### **Search & Structure (3 tools)**
 - `search_notes` - Search notes by keywords
 - `list_folder_with_structure` - Show folder hierarchy
 - `list_notes_with_structure` - Show folders + notes hierarchy
